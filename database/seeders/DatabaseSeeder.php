@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AuthorizationSeeder::class,
             MasterDataSeeder::class,
-            LocalDevelopmentSeeder::class,
+            SuperAdminSeeder::class,
         ]);
     }
 }

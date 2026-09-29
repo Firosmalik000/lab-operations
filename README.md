@@ -39,15 +39,15 @@ npm run types:check
 npm run build
 ```
 
-## Akun demo lokal
+## Akun Super Admin awal
 
-Seeder hanya membuat akun berikut ketika `APP_ENV=local`:
+Seeder membuat akun berikut pada seluruh environment, termasuk production:
 
 - Email: `admin@lab.test`
 - Password: `password`
 - Role: Super Admin
 
-Seeder tidak membuat akun berpassword tertebak pada environment produksi.
+Segera ubah password bawaan setelah login pertama di production. Menjalankan seeder kembali tidak akan mereset password akun yang sudah ada.
 
 ## Role awal
 
