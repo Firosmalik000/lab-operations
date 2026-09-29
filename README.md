@@ -24,6 +24,12 @@ npm run dev
 
 Konfigurasi contoh menggunakan MySQL di `127.0.0.1:3307`, database `lab-operation`, user `root`, dan password kosong. Sesuaikan kredensial tersebut untuk environment lain. Jalankan build produksi dengan `npm run build`.
 
+File TypeScript Wayfinder di `resources/js/actions`, `resources/js/routes`, dan `resources/js/wayfinder` disimpan di Git agar build produksi tidak perlu menjalankan proses PHP tambahan. Setelah mengubah route atau controller, perbarui file tersebut sebelum commit:
+
+```bash
+npm run wayfinder:generate
+```
+
 ## Validasi dan pengujian
 
 ```bash
