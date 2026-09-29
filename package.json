@@ -3,8 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
-        "build:ssr": "vite build && vite build --ssr",
+        "build": "node scripts/build.mjs build",
+        "build:ssr": "node scripts/build.mjs build && node scripts/build.mjs build --ssr",
         "dev": "vite",
         "wayfinder:generate": "php artisan wayfinder:generate --with-form --no-interaction",
         "check": "vp check",
@@ -34,7 +34,6 @@
         "@vitejs/plugin-react": "^6.1.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "concurrently": "^10.0.3",
         "input-otp": "^1.4.2",
         "laravel-vite-plugin": "^3.0.0",
         "lucide-react": "^0.475.0",
@@ -48,9 +47,7 @@
         "vite": "^8.0.0"
     },
     "devDependencies": {
-        "@rolldown/plugin-babel": "^0.2.3",
         "@types/node": "^22.13.5",
-        "babel-plugin-react-compiler": "^1.0.0",
         "vite-plus": "0.3.0"
     },
     "optionalDependencies": {
