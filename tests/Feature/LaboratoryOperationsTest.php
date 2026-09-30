@@ -367,6 +367,107 @@ class LaboratoryOperationsTest extends TestCase
         ])->assertSessionHasErrors('minimum_stock');
     }
 
+    public function test_unit_can_be_deleted_when_only_referenced_by_non_stock_items(): void
+    {
+        $admin = User::factory()->create(['default_laboratory_id' => $this->laboratory->id]);
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+        $admin->laboratories()->attach($this->laboratory);
+
+        $kitUnit = Unit::create(['name' => 'Kit', 'symbol' => 'kit', 'is_active' => true]);
+        $nonStockItem = Item::create([
+            'code' => 'TEST-KIT-01',
+            'name' => 'Test Kit Item',
+            'item_type_id' => $this->type->id,
+            'category_id' => $this->category->id,
+            'default_unit_id' => $kitUnit->id,
+            'inventory_mode' => InventoryMode::None,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete("/master/units/{$kitUnit->id}")
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('units', ['id' => $kitUnit->id]);
+        $this->assertDatabaseHas('items', ['id' => $nonStockItem->id, 'default_unit_id' => null]);
+    }
+
+    public function test_unit_cannot_be_deleted_when_referenced_by_stock_items(): void
+    {
+        $admin = User::factory()->create(['default_laboratory_id' => $this->laboratory->id]);
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+        $admin->laboratories()->attach($this->laboratory);
+
+        $stockUnit = Unit::create(['name' => 'Bottle', 'symbol' => 'btl', 'is_active' => true]);
+        Item::create([
+            'code' => 'TEST-STK-01',
+            'name' => 'Test Stock Item',
+            'item_type_id' => $this->type->id,
+            'category_id' => $this->category->id,
+            'default_unit_id' => $stockUnit->id,
+            'inventory_mode' => InventoryMode::Stock,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete("/master/units/{$stockUnit->id}")
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('units', ['id' => $stockUnit->id]);
+    }
+
+    public function test_unit_cannot_be_deleted_when_referenced_by_stock_movements(): void
+    {
+        $admin = User::factory()->create(['default_laboratory_id' => $this->laboratory->id]);
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+        $admin->laboratories()->attach($this->laboratory);
+
+        $movUnit = Unit::create(['name' => 'Roll', 'symbol' => 'roll', 'is_active' => true]);
+        $item = $this->item('TEST-MOV-01', InventoryMode::Stock);
+
+        StockMovement::create([
+            'item_id' => $item->id,
+            'laboratory_id' => $this->laboratory->id,
+            'type' => 'RECEIVING',
+            'quantity' => 10,
+            'unit_id' => $movUnit->id,
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete("/master/units/{$movUnit->id}")
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('units', ['id' => $movUnit->id]);
+    }
+
+    public function test_unit_cannot_be_deleted_when_referenced_by_material_usage_items(): void
+    {
+        $admin = User::factory()->create(['default_laboratory_id' => $this->laboratory->id]);
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+        $admin->laboratories()->attach($this->laboratory);
+
+        $usageUnit = Unit::create(['name' => 'Tube', 'symbol' => 'tube', 'is_active' => true]);
+        $item = $this->item('TEST-USG-01', InventoryMode::None);
+        $usage = $this->usage($this->laboratory, 'USG-TEST-001');
+
+        $usage->items()->create([
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'unit_id' => $usageUnit->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete("/master/units/{$usageUnit->id}")
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('units', ['id' => $usageUnit->id]);
+    }
+
     private function item(string $code, InventoryMode $mode, bool $active = true, bool $mapped = true): Item
     {
         $item = Item::create([

@@ -1,11 +1,27 @@
-import { Head, useForm, router } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import {
+    Check,
+    Copy,
+    Mail,
+    Pencil,
+    Plus,
+    RotateCcw,
+    Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import InputError from '@/components/input-error';
 import { PageHeading } from '@/components/page-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { type Column, DataTable } from '@/components/ui/data-table';
 import {
     Dialog,
@@ -35,6 +51,21 @@ type User = {
     laboratories: Option[];
     default_laboratory: Option | null;
 };
+type Invitation = {
+    id: number;
+    email: string;
+    name: string;
+    role: string;
+    laboratory_ids: number[];
+    default_laboratory: Option | null;
+    inviter: Option | null;
+    is_pending: boolean;
+    is_expired: boolean;
+    is_accepted: boolean;
+    accept_url: string;
+    expires_at: string;
+    created_at: string;
+};
 type Page<T> = {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
@@ -44,19 +75,34 @@ export default function Users({
     users,
     roles,
     laboratories,
+    invitations = [],
     can = { manage: true },
     currentUserId,
 }: {
     users: Page<User>;
     roles: Option[];
     laboratories: Option[];
+    invitations?: Invitation[];
     can?: { manage: boolean };
     currentUserId?: number;
 }) {
     const [selected, setSelected] = useState<User | null>(null);
+    const [inviting, setInviting] = useState(false);
     const [creating, setCreating] = useState(false);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
+    const [cancelingInvitation, setCancelingInvitation] =
+        useState<Invitation | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isCanceling, setIsCanceling] = useState(false);
+    const [resendingId, setResendingId] = useState<number | null>(null);
+    const [copiedId, setCopiedId] = useState<number | null>(null);
+
+    const inviteForm = useForm({
+        name: '',
+        email: '',
+        laboratory_ids: [] as number[],
+        default_laboratory_id: null as number | null,
+    });
 
     const createForm = useForm({
         name: '',
@@ -95,6 +141,17 @@ export default function Users({
             });
     };
 
+    const submitInvite = (event: React.FormEvent) => {
+        event.preventDefault();
+        inviteForm.post('/administration/users/invite', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setInviting(false);
+                inviteForm.reset();
+            },
+        });
+    };
+
     const submitCreate = (event: React.FormEvent) => {
         event.preventDefault();
         createForm.post('/administration/users', {
@@ -115,6 +172,37 @@ export default function Users({
             onFinish: () => setIsDeleting(false),
         });
     };
+
+    const confirmCancelInvitation = () => {
+        if (!cancelingInvitation) return;
+        setIsCanceling(true);
+        router.delete(`/administration/invitations/${cancelingInvitation.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setCancelingInvitation(null),
+            onFinish: () => setIsCanceling(false),
+        });
+    };
+
+    const handleCopyLink = (invitation: Invitation) => {
+        void navigator.clipboard.writeText(invitation.accept_url);
+        setCopiedId(invitation.id);
+        toast.success('Tautan aktivasi berhasil disalin ke clipboard');
+        setTimeout(() => setCopiedId(null), 2500);
+    };
+
+    const handleResend = (invitation: Invitation) => {
+        setResendingId(invitation.id);
+        router.post(
+            `/administration/invitations/${invitation.id}/resend`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setResendingId(null),
+            },
+        );
+    };
+
+    const pendingInvitations = invitations.filter((inv) => !inv.is_accepted);
 
     const columns: Column<User>[] = [
         {
@@ -218,6 +306,102 @@ export default function Users({
         },
     ];
 
+    const invitationColumns: Column<Invitation>[] = [
+        {
+            header: 'Calon Staf',
+            cell: (inv) => (
+                <div className="min-w-[160px]">
+                    <p className="font-semibold text-foreground">{inv.name}</p>
+                    <p className="text-xs text-muted-foreground">{inv.email}</p>
+                </div>
+            ),
+        },
+        {
+            header: 'Role',
+            className: 'hidden sm:table-cell',
+            cell: (inv) => (
+                <Badge variant="outline" className="text-xs uppercase">
+                    {inv.role || 'Staff'}
+                </Badge>
+            ),
+        },
+        {
+            header: 'Laboratorium',
+            className: 'hidden md:table-cell max-w-[200px]',
+            cell: (inv) => {
+                const labNames = laboratories
+                    .filter((l) => inv.laboratory_ids.includes(l.id))
+                    .map((l) => l.name)
+                    .join(', ');
+                return (
+                    <p
+                        className="truncate text-xs text-muted-foreground"
+                        title={labNames}
+                    >
+                        {labNames || '—'}
+                    </p>
+                );
+            },
+        },
+        {
+            header: 'Status Undangan',
+            cell: (inv) => (
+                <Badge
+                    variant={inv.is_expired ? 'destructive' : 'secondary'}
+                    className="text-xs"
+                >
+                    {inv.is_expired ? 'Kedaluwarsa' : 'Menunggu Aktivasi'}
+                </Badge>
+            ),
+        },
+        {
+            header: <span className="sr-only">Aksi</span>,
+            className: 'text-right whitespace-nowrap',
+            cell: (inv) => (
+                <div className="flex items-center justify-end gap-1">
+                    {can.manage && (
+                        <>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-muted-foreground hover:text-foreground"
+                                onClick={() => handleCopyLink(inv)}
+                                title="Salin Tautan Aktivasi"
+                            >
+                                {copiedId === inv.id ? (
+                                    <Check className="size-3.5 text-green-600" />
+                                ) : (
+                                    <Copy className="size-3.5" />
+                                )}
+                            </Button>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-muted-foreground hover:text-foreground"
+                                disabled={resendingId === inv.id}
+                                onClick={() => handleResend(inv)}
+                                title="Kirim Ulang Email"
+                            >
+                                <RotateCcw
+                                    className={`size-3.5 ${resendingId === inv.id ? 'animate-spin' : ''}`}
+                                />
+                            </Button>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-muted-foreground hover:text-destructive"
+                                onClick={() => setCancelingInvitation(inv)}
+                                title="Batalkan Undangan"
+                            >
+                                <Trash2 className="size-3.5" />
+                            </Button>
+                        </>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
     return (
         <>
             <Head title="User & Akses" />
@@ -226,25 +410,262 @@ export default function Users({
                     title="User & Akses"
                     actions={
                         can.manage && (
-                            <Button
-                                onClick={() => setCreating(true)}
-                                size="sm"
-                                className="gap-1.5"
-                            >
-                                <Plus className="size-4" /> Tambah User
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setCreating(true)}
+                                    size="sm"
+                                    className="gap-1.5"
+                                >
+                                    <Plus className="size-4" /> Buat Langsung
+                                </Button>
+                                <Button
+                                    onClick={() => setInviting(true)}
+                                    size="sm"
+                                    className="gap-1.5"
+                                >
+                                    <Mail className="size-4" /> Undang Staf
+                                </Button>
+                            </div>
                         )
                     }
                 />
 
-                <DataTable
-                    data={users.data}
-                    columns={columns}
-                    keyExtractor={(user) => user.id}
-                    paginationLinks={users.links}
-                    emptyTitle="Belum ada user"
-                    emptyDescription="Tambahkan user pertama untuk mengelola akses operasional laboratorium."
-                />
+                {pendingInvitations.length > 0 && (
+                    <Card className="border-primary/20 bg-primary/[0.02]">
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-base font-semibold">
+                                        Undangan Staf Tertunda (
+                                        {pendingInvitations.length})
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">
+                                        Staf yang telah diundang namun belum
+                                        menyelesaikan aktivasi kata sandi.
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <DataTable
+                                data={pendingInvitations}
+                                columns={invitationColumns}
+                                keyExtractor={(inv) => inv.id}
+                                emptyTitle="Tidak ada undangan tertunda"
+                                emptyDescription=""
+                            />
+                        </CardContent>
+                    </Card>
+                )}
+
+                <div>
+                    <h3 className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
+                        Daftar Pengguna Aktif
+                    </h3>
+                    <DataTable
+                        data={users.data}
+                        columns={columns}
+                        keyExtractor={(user) => user.id}
+                        paginationLinks={users.links}
+                        emptyTitle="Belum ada user"
+                        emptyDescription="Tambahkan user pertama untuk mengelola akses operasional laboratorium."
+                    />
+                </div>
+
+                {/* Invite Staff Modal */}
+                <Dialog open={inviting} onOpenChange={setInviting}>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+                        <form onSubmit={submitInvite}>
+                            <DialogHeader>
+                                <DialogTitle>
+                                    Undang Staf Baru via Email
+                                </DialogTitle>
+                            </DialogHeader>
+                            <div className="my-4 grid gap-4">
+                                <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+                                    Undangan akan dikirimkan ke alamat email
+                                    tujuan. Calon staf akan menerima tautan
+                                    untuk menentukan kata sandi akun mereka
+                                    sendiri dengan role otomatis{' '}
+                                    <span className="font-semibold text-foreground">
+                                        Staff
+                                    </span>
+                                    .
+                                </div>
+
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="invite-name">
+                                        Nama Lengkap
+                                    </Label>
+                                    <Input
+                                        id="invite-name"
+                                        value={inviteForm.data.name}
+                                        onChange={(e) =>
+                                            inviteForm.setData(
+                                                'name',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="cth. Siti Rahmawati"
+                                        required
+                                    />
+                                    <InputError
+                                        message={inviteForm.errors.name}
+                                    />
+                                </div>
+
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="invite-email">
+                                        Alamat Email
+                                    </Label>
+                                    <Input
+                                        id="invite-email"
+                                        type="email"
+                                        value={inviteForm.data.email}
+                                        onChange={(e) =>
+                                            inviteForm.setData(
+                                                'email',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="staf@laboratorium.id"
+                                        required
+                                    />
+                                    <InputError
+                                        message={inviteForm.errors.email}
+                                    />
+                                </div>
+
+                                <fieldset className="grid gap-2">
+                                    <legend className="text-sm font-medium">
+                                        Akses Laboratorium
+                                    </legend>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                        {laboratories.map((lab) => (
+                                            <label
+                                                key={lab.id}
+                                                className="flex min-h-10 items-center gap-2.5 rounded-lg border px-3 text-sm transition-colors hover:bg-muted/30"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded border-input text-primary focus:ring-primary"
+                                                    checked={inviteForm.data.laboratory_ids.includes(
+                                                        lab.id,
+                                                    )}
+                                                    onChange={(e) => {
+                                                        const next = e.target
+                                                            .checked
+                                                            ? [
+                                                                  ...inviteForm
+                                                                      .data
+                                                                      .laboratory_ids,
+                                                                  lab.id,
+                                                              ]
+                                                            : inviteForm.data.laboratory_ids.filter(
+                                                                  (id) =>
+                                                                      id !==
+                                                                      lab.id,
+                                                              );
+                                                        inviteForm.setData(
+                                                            'laboratory_ids',
+                                                            next,
+                                                        );
+                                                        if (
+                                                            !next.includes(
+                                                                inviteForm.data
+                                                                    .default_laboratory_id ??
+                                                                    -1,
+                                                            )
+                                                        ) {
+                                                            inviteForm.setData(
+                                                                'default_laboratory_id',
+                                                                null,
+                                                            );
+                                                        }
+                                                    }}
+                                                />
+                                                {lab.name}
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <InputError
+                                        message={
+                                            inviteForm.errors.laboratory_ids
+                                        }
+                                    />
+                                </fieldset>
+
+                                <div className="grid gap-1.5">
+                                    <Label>Laboratorium Default</Label>
+                                    <Select
+                                        value={
+                                            inviteForm.data
+                                                .default_laboratory_id
+                                                ? String(
+                                                      inviteForm.data
+                                                          .default_laboratory_id,
+                                                  )
+                                                : 'none'
+                                        }
+                                        onValueChange={(val) =>
+                                            inviteForm.setData(
+                                                'default_laboratory_id',
+                                                val === 'none'
+                                                    ? null
+                                                    : Number(val),
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pilih laboratorium default" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">
+                                                Belum dipilih
+                                            </SelectItem>
+                                            {laboratories
+                                                .filter((l) =>
+                                                    inviteForm.data.laboratory_ids.includes(
+                                                        l.id,
+                                                    ),
+                                                )
+                                                .map((lab) => (
+                                                    <SelectItem
+                                                        key={lab.id}
+                                                        value={String(lab.id)}
+                                                    >
+                                                        {lab.name}
+                                                    </SelectItem>
+                                                ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError
+                                        message={
+                                            inviteForm.errors
+                                                .default_laboratory_id
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter className="gap-2 sm:gap-0">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setInviting(false)}
+                                >
+                                    Batal
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={inviteForm.processing}
+                                >
+                                    Kirim Undangan Email
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Edit User Modal */}
                 <Dialog
@@ -443,12 +864,14 @@ export default function Users({
                     </DialogContent>
                 </Dialog>
 
-                {/* Create User Modal */}
+                {/* Create Direct User Modal */}
                 <Dialog open={creating} onOpenChange={setCreating}>
                     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
                         <form onSubmit={submitCreate}>
                             <DialogHeader>
-                                <DialogTitle>Tambah Pengguna Baru</DialogTitle>
+                                <DialogTitle>
+                                    Tambah Pengguna Langsung
+                                </DialogTitle>
                             </DialogHeader>
                             <div className="my-4 grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-1.5 sm:col-span-2">
@@ -714,6 +1137,16 @@ export default function Users({
                     itemName={deletingUser?.name}
                     loading={isDeleting}
                     onConfirm={confirmDelete}
+                />
+
+                <ConfirmDeleteDialog
+                    open={Boolean(cancelingInvitation)}
+                    onOpenChange={(v) => !v && setCancelingInvitation(null)}
+                    title="Batalkan Undangan"
+                    description={`Apakah Anda yakin ingin membatalkan undangan untuk ${cancelingInvitation?.email}? Tautan aktivasi tidak akan dapat digunakan lagi.`}
+                    itemName={cancelingInvitation?.name}
+                    loading={isCanceling}
+                    onConfirm={confirmCancelInvitation}
                 />
             </div>
         </>

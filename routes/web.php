@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\MaterialUsageController;
@@ -12,6 +13,9 @@ use App\Http\Controllers\UserAdministrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+
+Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.accept');
+Route::post('invitations/{token}', [InvitationController::class, 'store'])->name('invitations.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
@@ -45,6 +49,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('administration/audit', AuditLogController::class)->middleware('can:audit.view')->name('audit.index');
     Route::get('administration/users', [UserAdministrationController::class, 'index'])->middleware('can:users.manage')->name('users.index');
     Route::post('administration/users', [UserAdministrationController::class, 'store'])->middleware('can:users.manage')->name('users.store');
+    Route::post('administration/users/invite', [UserAdministrationController::class, 'invite'])->middleware('can:users.manage')->name('users.invite');
+    Route::post('administration/invitations/{invitation}/resend', [UserAdministrationController::class, 'resendInvitation'])->middleware('can:users.manage')->name('invitations.resend');
+    Route::delete('administration/invitations/{invitation}', [UserAdministrationController::class, 'destroyInvitation'])->middleware('can:users.manage')->name('invitations.destroy');
     Route::put('administration/users/{user}', [UserAdministrationController::class, 'update'])->middleware('can:users.manage')->name('users.update');
     Route::delete('administration/users/{user}', [UserAdministrationController::class, 'destroy'])->middleware('can:users.manage')->name('users.destroy');
     Route::get('administration/roles', [RoleAdministrationController::class, 'index'])->middleware('can:roles.manage')->name('roles.index');

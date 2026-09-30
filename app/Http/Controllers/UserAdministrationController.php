@@ -7,11 +7,15 @@ use App\Models\MaterialUsage;
 use App\Models\Role;
 use App\Models\StockMovement;
 use App\Models\User;
+use App\Models\UserInvitation;
+use App\Notifications\UserInvitationNotification;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -21,8 +25,35 @@ class UserAdministrationController extends Controller
 {
     public function index(Request $request): Response
     {
+        /** @var \Illuminate\Database\Eloquent\Collection<int, UserInvitation> $invitations */
+        $invitations = UserInvitation::with(['defaultLaboratory:id,name', 'inviter:id,name'])
+            ->latest()
+            ->get();
+
         return Inertia::render('administration/users', [
             'users' => User::with(['roles:id,name,label', 'laboratories:id,name', 'defaultLaboratory:id,name'])->orderBy('name')->paginate(20),
+            'invitations' => $invitations
+                ->map(fn (UserInvitation $invitation): array => [
+                    'id' => (int) $invitation->id,
+                    'email' => (string) $invitation->email,
+                    'name' => (string) $invitation->name,
+                    'role' => (string) $invitation->role,
+                    'laboratory_ids' => (array) $invitation->laboratory_ids,
+                    'default_laboratory' => $invitation->defaultLaboratory ? [
+                        'id' => (int) $invitation->defaultLaboratory->id,
+                        'name' => (string) $invitation->defaultLaboratory->name,
+                    ] : null,
+                    'inviter' => $invitation->inviter ? [
+                        'id' => (int) $invitation->inviter->id,
+                        'name' => (string) $invitation->inviter->name,
+                    ] : null,
+                    'is_pending' => $invitation->isPending(),
+                    'is_expired' => $invitation->isExpired(),
+                    'is_accepted' => $invitation->isAccepted(),
+                    'accept_url' => route('invitations.accept', ['token' => $invitation->token]),
+                    'expires_at' => $invitation->expires_at->toIso8601String(),
+                    'created_at' => $invitation->created_at?->toIso8601String(),
+                ])->all(),
             'roles' => Role::orderBy('label')->get(['id', 'name', 'label']),
             'laboratories' => Laboratory::orderBy('name')->get(['id', 'name']),
             'can' => [
@@ -30,6 +61,79 @@ class UserAdministrationController extends Controller
             ],
             'currentUserId' => $request->user()->id,
         ]);
+    }
+
+    public function invite(Request $request, AuditService $audit): RedirectResponse
+    {
+        abort_unless($request->user()->can('users.manage'), 403);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'laboratory_ids' => ['required', 'array', 'min:1'],
+            'laboratory_ids.*' => ['integer', 'distinct', 'exists:laboratories,id'],
+            'default_laboratory_id' => ['nullable', 'integer', 'exists:laboratories,id'],
+        ]);
+
+        if (! empty($data['default_laboratory_id']) && ! in_array((int) $data['default_laboratory_id'], array_map('intval', $data['laboratory_ids']), true)) {
+            throw ValidationException::withMessages(['default_laboratory_id' => 'Laboratorium default harus termasuk dalam akses user.']);
+        }
+
+        // Clean up previous pending invitations for the same email
+        UserInvitation::where('email', $data['email'])->whereNull('accepted_at')->delete();
+
+        $invitation = UserInvitation::create([
+            'email' => $data['email'],
+            'name' => $data['name'],
+            'laboratory_ids' => array_values(array_map('intval', $data['laboratory_ids'])),
+            'default_laboratory_id' => $data['default_laboratory_id'] ? (int) $data['default_laboratory_id'] : null,
+            'role' => 'staff',
+            'token' => Str::random(64),
+            'invited_by' => $request->user()->id,
+            'expires_at' => now()->addDays(3),
+        ]);
+
+        Notification::route('mail', $invitation->email)
+            ->notify(new UserInvitationNotification($invitation));
+
+        $audit->record('invite', $invitation, null, $invitation->toArray(), $request);
+
+        return back()->with('success', "Undangan berhasil dikirim ke {$invitation->email}.");
+    }
+
+    public function resendInvitation(Request $request, UserInvitation $invitation, AuditService $audit): RedirectResponse
+    {
+        abort_unless($request->user()->can('users.manage'), 403);
+
+        if ($invitation->isAccepted()) {
+            return back()->with('error', 'Undangan ini sudah diterima oleh user.');
+        }
+
+        $invitation->update([
+            'token' => Str::random(64),
+            'expires_at' => now()->addDays(3),
+        ]);
+
+        Notification::route('mail', $invitation->email)
+            ->notify(new UserInvitationNotification($invitation));
+
+        $audit->record('resend-invite', $invitation, null, $invitation->toArray(), $request);
+
+        return back()->with('success', "Undangan berhasil dikirim ulang ke {$invitation->email}.");
+    }
+
+    public function destroyInvitation(Request $request, UserInvitation $invitation, AuditService $audit): RedirectResponse
+    {
+        abort_unless($request->user()->can('users.manage'), 403);
+
+        if ($invitation->isAccepted()) {
+            return back()->with('error', 'Undangan yang sudah diterima tidak dapat dibatalkan.');
+        }
+
+        $old = $invitation->toArray();
+        $invitation->delete();
+        $audit->record('cancel-invite', $invitation, $old, null, $request);
+
+        return back()->with('success', 'Undangan berhasil dibatalkan.');
     }
 
     public function update(Request $request, User $user, AuditService $audit): RedirectResponse

@@ -15,6 +15,7 @@ class AuthorizationSeeder extends Seeder
         'material-usage.create' => 'Mencatat penggunaan bahan',
         'material-usage.update' => 'Mengubah penggunaan bahan',
         'material-usage.void' => 'Membatalkan penggunaan bahan',
+        'material-usage.delete' => 'Menghapus draf penggunaan bahan',
         'inventory.view' => 'Melihat inventory',
         'inventory.opening' => 'Mencatat stok awal',
         'inventory.receive' => 'Mencatat penerimaan',
@@ -43,7 +44,7 @@ class AuthorizationSeeder extends Seeder
         $roles = [
             'super-admin' => ['Super Admin', array_keys($this->permissions)],
             'lab-admin' => ['Lab Admin', array_values(array_filter(array_keys($this->permissions), fn (string $permission): bool => ! in_array($permission, ['users.manage', 'roles.manage', 'audit.view'], true)))],
-            'supervisor' => ['Supervisor', ['dashboard.view', 'material-usage.view', 'material-usage.create', 'material-usage.update', 'material-usage.void', 'inventory.view', 'reports.view']],
+            'supervisor' => ['Supervisor', ['dashboard.view', 'material-usage.view', 'material-usage.create', 'material-usage.update', 'material-usage.void', 'material-usage.delete', 'inventory.view', 'reports.view']],
             'staff' => ['Staff', ['dashboard.view', 'material-usage.view', 'material-usage.create']],
             'inventory-admin' => ['Inventory Admin', ['dashboard.view', 'inventory.view', 'inventory.opening', 'inventory.receive', 'inventory.adjust', 'items.view', 'items.create', 'items.update', 'items.delete', 'reports.view']],
             'qa-qc' => ['QA/QC', ['dashboard.view', 'material-usage.view', 'inventory.view', 'reports.view', 'audit.view']],

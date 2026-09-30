@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\InventoryMode;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\ItemType;
 use App\Models\Laboratory;
 use App\Models\MaterialUsage;
+use App\Models\MaterialUsageItem;
 use App\Models\StockMovement;
 use App\Models\StorageLocation;
 use App\Models\Unit;
@@ -120,8 +122,17 @@ class MasterDataController extends Controller
                 return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan oleh item.");
             }
         } elseif ($resource === 'units') {
-            if (Item::where('default_unit_id', $id)->exists() || StockMovement::where('unit_id', $id)->exists()) {
-                return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan oleh item atau mutasi stok.");
+            if (StockMovement::where('unit_id', $id)->exists() || MaterialUsageItem::where('unit_id', $id)->exists()) {
+                return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan dalam riwayat mutasi stok atau penggunaan.");
+            }
+
+            $stockItems = Item::where('default_unit_id', $id)
+                ->where('inventory_mode', InventoryMode::Stock)
+                ->pluck('name');
+
+            if ($stockItems->isNotEmpty()) {
+                $sampleNames = $stockItems->take(3)->implode(', ');
+                return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan sebagai satuan default oleh item mode STOCK ({$sampleNames}). Ubah satuan default item tersebut terlebih dahulu.");
             }
         } elseif ($resource === 'storage-locations') {
             if (StockMovement::where('storage_location_id', $id)->exists()) {
@@ -130,7 +141,10 @@ class MasterDataController extends Controller
         }
 
         $old = $record->toArray();
-        DB::transaction(function () use ($record, $audit, $request, $old): void {
+        DB::transaction(function () use ($record, $audit, $request, $old, $resource, $id): void {
+            if ($resource === 'units') {
+                Item::where('default_unit_id', $id)->update(['default_unit_id' => null]);
+            }
             $audit->record('delete', $record, $old, null, $request);
             $record->delete();
         });
