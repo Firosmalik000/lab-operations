@@ -132,6 +132,7 @@ class MasterDataController extends Controller
 
             if ($stockItems->isNotEmpty()) {
                 $sampleNames = $stockItems->take(3)->implode(', ');
+
                 return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan sebagai satuan default oleh item mode STOCK ({$sampleNames}). Ubah satuan default item tersebut terlebih dahulu.");
             }
         } elseif ($resource === 'storage-locations') {

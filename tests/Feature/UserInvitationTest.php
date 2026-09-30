@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\InventoryMode;
 use App\Enums\MaterialUsageStatus;
+use App\Mail\UserInvitationMail;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\ItemType;
@@ -12,10 +14,9 @@ use App\Models\Role;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\UserInvitation;
-use App\Notifications\UserInvitationNotification;
 use Database\Seeders\AuthorizationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class UserInvitationTest extends TestCase
@@ -47,7 +48,7 @@ class UserInvitationTest extends TestCase
 
     public function test_admin_can_invite_staff_via_email(): void
     {
-        Notification::fake();
+        Mail::fake();
 
         $response = $this->actingAs($this->admin)->post('/administration/users/invite', [
             'name' => 'Budi Santoso',
@@ -67,10 +68,32 @@ class UserInvitationTest extends TestCase
             'accepted_at' => null,
         ]);
 
-        Notification::assertSentTo(
-            Notification::route('mail', 'budi@lab.id'),
-            UserInvitationNotification::class
-        );
+        Mail::assertSent(UserInvitationMail::class, function (UserInvitationMail $mail): bool {
+            return $mail->hasTo('budi@lab.id')
+                && $mail->invitation->name === 'Budi Santoso';
+        });
+    }
+
+    public function test_user_invitation_mail_renders_properly(): void
+    {
+        $invitation = UserInvitation::create([
+            'email' => 'ratna@lab.id',
+            'name' => 'Ratna Sari',
+            'role' => 'staff',
+            'laboratory_ids' => [$this->laboratory->id],
+            'default_laboratory_id' => $this->laboratory->id,
+            'token' => 'ratna-token-789',
+            'invited_by' => $this->admin->id,
+            'expires_at' => now()->addDays(3),
+        ]);
+
+        $mail = new UserInvitationMail($invitation);
+        $mail->assertHasSubject('Undangan Bergabung ke Sistem Operasional Lab - '.config('app.name'));
+        $mail->assertSeeInHtml('Undangan Bergabung');
+        $mail->assertSeeInHtml('Ratna Sari');
+        $mail->assertSeeInHtml('ratna@lab.id');
+        $mail->assertSeeInHtml('Aktivasi Akun & Buat Kata Sandi');
+        $mail->assertSeeInHtml($invitation->token);
     }
 
     public function test_invited_user_can_view_invitation_page_with_valid_token(): void
@@ -141,7 +164,7 @@ class UserInvitationTest extends TestCase
 
     public function test_admin_can_resend_invitation(): void
     {
-        Notification::fake();
+        Mail::fake();
 
         $invitation = UserInvitation::create([
             'email' => 'dewi@lab.id',
@@ -160,10 +183,9 @@ class UserInvitationTest extends TestCase
         $this->assertNotEquals('old-token', $invitation->token);
         $this->assertTrue($invitation->expires_at->isFuture());
 
-        Notification::assertSentTo(
-            Notification::route('mail', 'dewi@lab.id'),
-            UserInvitationNotification::class
-        );
+        Mail::assertSent(UserInvitationMail::class, function (UserInvitationMail $mail): bool {
+            return $mail->hasTo('dewi@lab.id');
+        });
     }
 
     public function test_admin_can_cancel_invitation(): void
@@ -201,7 +223,7 @@ class UserInvitationTest extends TestCase
             'item_type_id' => $type->id,
             'item_category_id' => $category->id,
             'default_unit_id' => $unit->id,
-            'inventory_mode' => \App\Enums\InventoryMode::Stock,
+            'inventory_mode' => InventoryMode::Stock,
             'is_active' => true,
         ]);
 

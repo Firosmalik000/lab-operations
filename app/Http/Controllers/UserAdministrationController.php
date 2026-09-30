@@ -8,13 +8,13 @@ use App\Models\Role;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\UserInvitation;
-use App\Notifications\UserInvitationNotification;
 use App\Services\AuditService;
+use App\Services\InvitationMailService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -25,7 +25,7 @@ class UserAdministrationController extends Controller
 {
     public function index(Request $request): Response
     {
-        /** @var \Illuminate\Database\Eloquent\Collection<int, UserInvitation> $invitations */
+        /** @var Collection<int, UserInvitation> $invitations */
         $invitations = UserInvitation::with(['defaultLaboratory:id,name', 'inviter:id,name'])
             ->latest()
             ->get();
@@ -63,7 +63,7 @@ class UserAdministrationController extends Controller
         ]);
     }
 
-    public function invite(Request $request, AuditService $audit): RedirectResponse
+    public function invite(Request $request, AuditService $audit, InvitationMailService $mailService): RedirectResponse
     {
         abort_unless($request->user()->can('users.manage'), 403);
         $data = $request->validate([
@@ -92,15 +92,14 @@ class UserAdministrationController extends Controller
             'expires_at' => now()->addDays(3),
         ]);
 
-        Notification::route('mail', $invitation->email)
-            ->notify(new UserInvitationNotification($invitation));
+        $mailService->send($invitation);
 
         $audit->record('invite', $invitation, null, $invitation->toArray(), $request);
 
         return back()->with('success', "Undangan berhasil dikirim ke {$invitation->email}.");
     }
 
-    public function resendInvitation(Request $request, UserInvitation $invitation, AuditService $audit): RedirectResponse
+    public function resendInvitation(Request $request, UserInvitation $invitation, AuditService $audit, InvitationMailService $mailService): RedirectResponse
     {
         abort_unless($request->user()->can('users.manage'), 403);
 
@@ -113,8 +112,7 @@ class UserAdministrationController extends Controller
             'expires_at' => now()->addDays(3),
         ]);
 
-        Notification::route('mail', $invitation->email)
-            ->notify(new UserInvitationNotification($invitation));
+        $mailService->send($invitation);
 
         $audit->record('resend-invite', $invitation, null, $invitation->toArray(), $request);
 
