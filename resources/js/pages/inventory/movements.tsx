@@ -117,8 +117,10 @@ export default function Movements({
                         className={`font-semibold ${isPositive ? 'text-primary' : 'text-foreground'}`}
                     >
                         {isPositive
-                            ? `+${qty.toLocaleString('id-ID')}`
-                            : qty.toLocaleString('id-ID')}{' '}
+                            ? `+${qty.toLocaleString('id-ID', { maximumFractionDigits: 2 })}`
+                            : qty.toLocaleString('id-ID', {
+                                  maximumFractionDigits: 2,
+                              })}{' '}
                         <span className="text-xs font-normal text-muted-foreground">
                             {m.unit.symbol}
                         </span>

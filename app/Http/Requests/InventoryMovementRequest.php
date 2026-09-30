@@ -30,7 +30,7 @@ class InventoryMovementRequest extends FormRequest
             'item_id' => ['required', 'integer', 'exists:items,id'],
             'laboratory_id' => ['required', 'integer', Rule::exists('laboratories', 'id')->where('is_active', true)],
             'storage_location_id' => ['nullable', 'integer', 'exists:storage_locations,id'],
-            'quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,4', 'max:999999999999.9999'],
+            'quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,2', 'max:999999999999.99'],
             'unit_id' => ['required', 'integer', Rule::exists('units', 'id')->where('is_active', true)],
             'notes' => [Rule::requiredIf(fn (): bool => str_starts_with((string) $this->input('type'), 'ADJUSTMENT_')), 'nullable', 'string', 'max:1000'],
         ];

@@ -115,7 +115,7 @@ class ItemController extends Controller
             'category_id' => ['nullable', Rule::exists('item_categories', 'id')->where('item_type_id', $request->integer('item_type_id'))],
             'default_unit_id' => [Rule::requiredIf($request->input('inventory_mode') === 'STOCK'), 'nullable', 'exists:units,id'],
             'inventory_mode' => ['required', Rule::enum(InventoryMode::class)],
-            'minimum_stock' => ['nullable', 'numeric', 'min:0'],
+            'minimum_stock' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
             'is_active' => ['required', 'boolean'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'laboratory_ids' => ['required', 'array', 'min:1'],

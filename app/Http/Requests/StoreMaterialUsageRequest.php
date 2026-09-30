@@ -26,7 +26,7 @@ class StoreMaterialUsageRequest extends FormRequest
             'status' => ['sometimes', Rule::in(['DRAFT', 'SUBMITTED'])],
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.item_id' => ['required', 'integer', 'distinct', 'exists:items,id'],
-            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,4', 'max:999999999999.9999'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,2', 'max:999999999999.99'],
             'items.*.unit_id' => ['required', 'integer', Rule::exists('units', 'id')->where('is_active', true)],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
         ];

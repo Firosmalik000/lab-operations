@@ -308,6 +308,65 @@ class LaboratoryOperationsTest extends TestCase
         $this->assertDatabaseHas('material_usages', ['id' => $submitted->id]);
     }
 
+    public function test_decimal_inputs_are_limited_to_maximum_two_decimal_places(): void
+    {
+        $admin = User::factory()->create(['default_laboratory_id' => $this->laboratory->id]);
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+        $admin->laboratories()->attach($this->laboratory);
+
+        $item = $this->item('DEC01', InventoryMode::Stock);
+
+        // Usage quantity with 2 decimals passes
+        $this->actingAs($this->staff)->post('/material-usages', $this->payload([$item], '10.25'))
+            ->assertRedirect();
+
+        // Usage quantity with > 2 decimals fails validation
+        $this->actingAs($this->staff)->post('/material-usages', $this->payload([$item], '10.255'))
+            ->assertSessionHasErrors('items.0.quantity');
+
+        // Inventory movement quantity with 2 decimals passes
+        $this->actingAs($admin)->post('/inventory/movements', [
+            'type' => 'RECEIVING',
+            'item_id' => $item->id,
+            'laboratory_id' => $this->laboratory->id,
+            'quantity' => '5.50',
+            'unit_id' => $this->unit->id,
+        ])->assertRedirect();
+
+        // Inventory movement quantity with > 2 decimals fails validation
+        $this->actingAs($admin)->post('/inventory/movements', [
+            'type' => 'RECEIVING',
+            'item_id' => $item->id,
+            'laboratory_id' => $this->laboratory->id,
+            'quantity' => '5.555',
+            'unit_id' => $this->unit->id,
+        ])->assertSessionHasErrors('quantity');
+
+        // Item creation with 2 decimals minimum stock passes
+        $this->actingAs($admin)->post('/master/items', [
+            'code' => 'DEC02',
+            'name' => 'Item Dec 2',
+            'item_type_id' => $this->type->id,
+            'inventory_mode' => InventoryMode::Stock->value,
+            'default_unit_id' => $this->unit->id,
+            'minimum_stock' => '2.50',
+            'is_active' => true,
+            'laboratory_ids' => [$this->laboratory->id],
+        ])->assertRedirect();
+
+        // Item creation with > 2 decimals minimum stock fails validation
+        $this->actingAs($admin)->post('/master/items', [
+            'code' => 'DEC03',
+            'name' => 'Item Dec 3',
+            'item_type_id' => $this->type->id,
+            'inventory_mode' => InventoryMode::Stock->value,
+            'default_unit_id' => $this->unit->id,
+            'minimum_stock' => '2.555',
+            'is_active' => true,
+            'laboratory_ids' => [$this->laboratory->id],
+        ])->assertSessionHasErrors('minimum_stock');
+    }
+
     private function item(string $code, InventoryMode $mode, bool $active = true, bool $mapped = true): Item
     {
         $item = Item::create([

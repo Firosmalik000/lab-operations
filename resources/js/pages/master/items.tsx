@@ -94,7 +94,9 @@ export default function Items({
             category_id: value?.category_id ?? null,
             default_unit_id: value?.default_unit_id ?? null,
             inventory_mode: value?.inventory_mode ?? 'NONE',
-            minimum_stock: value?.minimum_stock ?? '',
+            minimum_stock: value?.minimum_stock
+                ? String(Number(value.minimum_stock))
+                : '',
             is_active: value?.is_active ?? true,
             notes: value?.notes ?? '',
             laboratory_ids: value?.laboratories.map((lab) => lab.id) ?? [],
@@ -521,15 +523,24 @@ export default function Items({
                                         <Input
                                             id="item-min-stock"
                                             type="number"
+                                            inputMode="decimal"
                                             min="0"
-                                            step="any"
+                                            step="0.01"
                                             value={form.data.minimum_stock}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'minimum_stock',
-                                                    e.target.value,
-                                                )
-                                            }
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (
+                                                    val === '' ||
+                                                    /^\d*(\.\d{0,2})?$/.test(
+                                                        val,
+                                                    )
+                                                ) {
+                                                    form.setData(
+                                                        'minimum_stock',
+                                                        val,
+                                                    );
+                                                }
+                                            }}
                                             placeholder="0"
                                         />
                                         <InputError

@@ -512,16 +512,25 @@ export default function CreateUsage({
                                                         id={`quantity-${index}`}
                                                         inputMode="decimal"
                                                         type="number"
-                                                        min="0.0001"
-                                                        step="any"
+                                                        min="0.01"
+                                                        step="0.01"
                                                         value={line.quantity}
-                                                        onChange={(e) =>
-                                                            update(index, {
-                                                                quantity:
-                                                                    e.target
-                                                                        .value,
-                                                            })
-                                                        }
+                                                        onChange={(e) => {
+                                                            const val =
+                                                                e.target.value;
+                                                            if (
+                                                                val === '' ||
+                                                                /^\d*(\.\d{0,2})?$/.test(
+                                                                    val,
+                                                                )
+                                                            ) {
+                                                                update(index, {
+                                                                    quantity:
+                                                                        val,
+                                                                });
+                                                            }
+                                                        }}
+                                                        placeholder="0.00"
                                                         aria-invalid={Boolean(
                                                             errors[
                                                                 `items.${index}.quantity`

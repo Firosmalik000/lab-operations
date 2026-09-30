@@ -151,12 +151,19 @@ export default function InventoryCreate({
                                 id="quantity"
                                 type="number"
                                 inputMode="decimal"
-                                min="0.0001"
-                                step="any"
+                                min="0.01"
+                                step="0.01"
                                 value={form.data.quantity}
-                                onChange={(e) =>
-                                    form.setData('quantity', e.target.value)
-                                }
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (
+                                        val === '' ||
+                                        /^\d*(\.\d{0,2})?$/.test(val)
+                                    ) {
+                                        form.setData('quantity', val);
+                                    }
+                                }}
+                                placeholder="0.00"
                             />
                             <InputError message={errors.quantity} />
                         </div>

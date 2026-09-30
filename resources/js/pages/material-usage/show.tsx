@@ -243,7 +243,11 @@ export default function UsageShow({
                                                     '—'}
                                             </td>
                                             <td className="p-3 text-right font-medium tabular-nums">
-                                                {line.quantity}{' '}
+                                                {Number(
+                                                    line.quantity,
+                                                ).toLocaleString('id-ID', {
+                                                    maximumFractionDigits: 2,
+                                                })}{' '}
                                                 {line.unit.symbol}
                                             </td>
                                             <td className="p-3">
@@ -277,7 +281,10 @@ export default function UsageShow({
                                         </Badge>
                                     </div>
                                     <p className="mt-4 text-xl font-semibold tabular-nums">
-                                        {line.quantity}{' '}
+                                        {Number(line.quantity).toLocaleString(
+                                            'id-ID',
+                                            { maximumFractionDigits: 2 },
+                                        )}{' '}
                                         <span className="text-base font-normal text-muted-foreground">
                                             {line.unit.symbol}
                                         </span>

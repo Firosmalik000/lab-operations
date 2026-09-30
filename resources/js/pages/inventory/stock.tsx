@@ -98,7 +98,9 @@ export default function StockIndex({
             className: 'tabular-nums',
             cell: (stock) => (
                 <span className="font-semibold text-foreground">
-                    {Number(stock.balance).toLocaleString('id-ID')}{' '}
+                    {Number(stock.balance).toLocaleString('id-ID', {
+                        maximumFractionDigits: 2,
+                    })}{' '}
                     {stock.symbol}
                 </span>
             ),
@@ -109,7 +111,7 @@ export default function StockIndex({
                 'hidden md:table-cell tabular-nums text-xs text-muted-foreground',
             cell: (stock) =>
                 stock.minimum_stock !== null
-                    ? `${Number(stock.minimum_stock).toLocaleString('id-ID')} ${stock.symbol}`
+                    ? `${Number(stock.minimum_stock).toLocaleString('id-ID', { maximumFractionDigits: 2 })} ${stock.symbol}`
                     : '—',
         },
         {
