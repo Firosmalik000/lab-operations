@@ -15,24 +15,38 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          extensions: mbstring, dom, fileinfo, sqlite3
           tools: composer:v2
           coverage: none
 
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
 
+      - name: Prepare Environment
+        run: |
+          cp .env.example .env
+          sed -i 's/DB_CONNECTION=mysql/DB_CONNECTION=sqlite/g' .env
+          sed -i 's/DB_DATABASE=lab-operation/DB_DATABASE=database\/database.sqlite/g' .env
+          touch database/database.sqlite
+
       - name: Setup Application
         run: composer setup
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
 
       - name: Run CI Checks
         run: composer ci:check
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
