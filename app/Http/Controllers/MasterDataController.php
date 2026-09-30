@@ -107,7 +107,8 @@ class MasterDataController extends Controller
         }
 
         if ($resource === 'laboratories') {
-            if ($record->users()->exists() || $record->items()->exists() || StockMovement::where('laboratory_id', $id)->exists() || MaterialUsage::where('laboratory_id', $id)->exists()) {
+            $laboratory = Laboratory::findOrFail($id);
+            if ($laboratory->users()->exists() || $laboratory->items()->exists() || StockMovement::where('laboratory_id', $id)->exists() || MaterialUsage::where('laboratory_id', $id)->exists()) {
                 return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan oleh user, item, atau transaksi.");
             }
         } elseif ($resource === 'item-types') {
