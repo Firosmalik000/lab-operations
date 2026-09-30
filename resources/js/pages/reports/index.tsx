@@ -60,11 +60,15 @@ export default function Reports({
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
                 <PageHeading
                     title={reportTypes[type] ?? 'Laporan'}
-                    description="Tujuh laporan operasional dengan filter sesuai ruang lingkup laboratorium Anda."
                     actions={
-                        <Button asChild variant="outline">
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5"
+                        >
                             <a href={exportUrl}>
-                                <Download aria-hidden="true" /> Ekspor CSV
+                                <Download className="size-4" /> Ekspor CSV
                             </a>
                         </Button>
                     }
@@ -149,22 +153,31 @@ export default function Reports({
                     />
                 ) : (
                     <>
-                        <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
+                        <div className="overflow-x-auto rounded-xl border bg-card shadow-xs">
                             <table className="w-full text-sm">
-                                <thead className="bg-muted/50 text-left">
+                                <thead className="border-b bg-muted/40 text-left text-xs tracking-wider whitespace-nowrap text-muted-foreground uppercase">
                                     <tr>
                                         {Object.values(columns).map((label) => (
-                                            <th key={label} className="p-4">
+                                            <th
+                                                key={label}
+                                                className="p-3.5 font-semibold"
+                                            >
                                                 {label}
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y">
+                                <tbody className="divide-y divide-border/60">
                                     {rows.data.map((row, index) => (
-                                        <tr key={index}>
+                                        <tr
+                                            key={index}
+                                            className="transition-colors hover:bg-muted/40"
+                                        >
                                             {Object.keys(columns).map((key) => (
-                                                <td key={key} className="p-4">
+                                                <td
+                                                    key={key}
+                                                    className="p-3.5 align-middle whitespace-nowrap"
+                                                >
                                                     {display(row[key])}
                                                 </td>
                                             ))}
@@ -172,34 +185,6 @@ export default function Reports({
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
-                        <div className="grid gap-3 md:hidden">
-                            {rows.data.map((row, index) => (
-                                <Card key={index}>
-                                    <CardContent className="grid grid-cols-2 gap-3 p-4">
-                                        {Object.entries(columns).map(
-                                            ([key, label]) => (
-                                                <div
-                                                    key={key}
-                                                    className={
-                                                        key === 'item' ||
-                                                        key === 'number'
-                                                            ? 'col-span-2'
-                                                            : ''
-                                                    }
-                                                >
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {label}
-                                                    </p>
-                                                    <p className="mt-1 text-sm font-medium break-words">
-                                                        {display(row[key])}
-                                                    </p>
-                                                </div>
-                                            ),
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            ))}
                         </div>
                         <Pagination links={rows.links} />
                     </>

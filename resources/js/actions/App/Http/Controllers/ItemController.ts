@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\ItemController::store
- * @see app/Http/Controllers/ItemController.php:47
+ * @see app/Http/Controllers/ItemController.php:51
  * @route '/master/items'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\ItemController::store
- * @see app/Http/Controllers/ItemController.php:47
+ * @see app/Http/Controllers/ItemController.php:51
  * @route '/master/items'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ItemController::store
- * @see app/Http/Controllers/ItemController.php:47
+ * @see app/Http/Controllers/ItemController.php:51
  * @route '/master/items'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\ItemController::store
- * @see app/Http/Controllers/ItemController.php:47
+ * @see app/Http/Controllers/ItemController.php:51
  * @route '/master/items'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\ItemController::store
- * @see app/Http/Controllers/ItemController.php:47
+ * @see app/Http/Controllers/ItemController.php:51
  * @route '/master/items'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -134,7 +134,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\ItemController::update
- * @see app/Http/Controllers/ItemController.php:63
+ * @see app/Http/Controllers/ItemController.php:67
  * @route '/master/items/{item}'
  */
 export const update = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -149,7 +149,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\ItemController::update
- * @see app/Http/Controllers/ItemController.php:63
+ * @see app/Http/Controllers/ItemController.php:67
  * @route '/master/items/{item}'
  */
 update.url = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -182,7 +182,7 @@ update.url = (args: { item: number | { id: number } } | [item: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\ItemController::update
- * @see app/Http/Controllers/ItemController.php:63
+ * @see app/Http/Controllers/ItemController.php:67
  * @route '/master/items/{item}'
  */
 update.put = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -192,7 +192,7 @@ update.put = (args: { item: number | { id: number } } | [item: number | { id: nu
 
     /**
 * @see \App\Http\Controllers\ItemController::update
- * @see app/Http/Controllers/ItemController.php:63
+ * @see app/Http/Controllers/ItemController.php:67
  * @route '/master/items/{item}'
  */
     const updateForm = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ update.put = (args: { item: number | { id: number } } | [item: number | { id: nu
 
             /**
 * @see \App\Http\Controllers\ItemController::update
- * @see app/Http/Controllers/ItemController.php:63
+ * @see app/Http/Controllers/ItemController.php:67
  * @route '/master/items/{item}'
  */
         updateForm.put = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -221,6 +221,95 @@ update.put = (args: { item: number | { id: number } } | [item: number | { id: nu
         })
     
     update.form = updateForm
-const ItemController = { index, store, update }
+/**
+* @see \App\Http\Controllers\ItemController::destroy
+ * @see app/Http/Controllers/ItemController.php:87
+ * @route '/master/items/{item}'
+ */
+export const destroy = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+destroy.definition = {
+    methods: ["delete"],
+    url: '/master/items/{item}',
+} satisfies RouteDefinition<["delete"]>
+
+/**
+* @see \App\Http\Controllers\ItemController::destroy
+ * @see app/Http/Controllers/ItemController.php:87
+ * @route '/master/items/{item}'
+ */
+destroy.url = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { item: args }
+    }
+
+            if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+            args = { item: args.id }
+        }
+    
+    if (Array.isArray(args)) {
+        args = {
+                    item: args[0],
+                }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+                        item: typeof args.item === 'object'
+                ? args.item.id
+                : args.item,
+                }
+
+    return destroy.definition.url
+            .replace('{item}', parsedArgs.item.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\ItemController::destroy
+ * @see app/Http/Controllers/ItemController.php:87
+ * @route '/master/items/{item}'
+ */
+destroy.delete = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+    /**
+* @see \App\Http\Controllers\ItemController::destroy
+ * @see app/Http/Controllers/ItemController.php:87
+ * @route '/master/items/{item}'
+ */
+    const destroyForm = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: destroy.url(args, {
+                    [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                        _method: 'DELETE',
+                        ...(options?.query ?? options?.mergeQuery ?? {}),
+                    }
+                }),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\ItemController::destroy
+ * @see app/Http/Controllers/ItemController.php:87
+ * @route '/master/items/{item}'
+ */
+        destroyForm.delete = (args: { item: number | { id: number } } | [item: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: destroy.url(args, {
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'DELETE',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'post',
+        })
+    
+    destroy.form = destroyForm
+const ItemController = { index, store, update, destroy }
 
 export default ItemController

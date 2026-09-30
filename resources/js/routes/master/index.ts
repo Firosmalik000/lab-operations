@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\MasterDataController::index
- * @see app/Http/Controllers/MasterDataController.php:29
+ * @see app/Http/Controllers/MasterDataController.php:33
  * @route '/master/{resource}'
  */
 export const index = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\MasterDataController::index
- * @see app/Http/Controllers/MasterDataController.php:29
+ * @see app/Http/Controllers/MasterDataController.php:33
  * @route '/master/{resource}'
  */
 index.url = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -44,7 +44,7 @@ index.url = (args: { resource: string | number } | [resource: string | number ] 
 
 /**
 * @see \App\Http\Controllers\MasterDataController::index
- * @see app/Http/Controllers/MasterDataController.php:29
+ * @see app/Http/Controllers/MasterDataController.php:33
  * @route '/master/{resource}'
  */
 index.get = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -53,7 +53,7 @@ index.get = (args: { resource: string | number } | [resource: string | number ] 
 })
 /**
 * @see \App\Http\Controllers\MasterDataController::index
- * @see app/Http/Controllers/MasterDataController.php:29
+ * @see app/Http/Controllers/MasterDataController.php:33
  * @route '/master/{resource}'
  */
 index.head = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -63,7 +63,7 @@ index.head = (args: { resource: string | number } | [resource: string | number ]
 
     /**
 * @see \App\Http\Controllers\MasterDataController::index
- * @see app/Http/Controllers/MasterDataController.php:29
+ * @see app/Http/Controllers/MasterDataController.php:33
  * @route '/master/{resource}'
  */
     const indexForm = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -73,7 +73,7 @@ index.head = (args: { resource: string | number } | [resource: string | number ]
 
             /**
 * @see \App\Http\Controllers\MasterDataController::index
- * @see app/Http/Controllers/MasterDataController.php:29
+ * @see app/Http/Controllers/MasterDataController.php:33
  * @route '/master/{resource}'
  */
         indexForm.get = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.head = (args: { resource: string | number } | [resource: string | number ]
         })
             /**
 * @see \App\Http\Controllers\MasterDataController::index
- * @see app/Http/Controllers/MasterDataController.php:29
+ * @see app/Http/Controllers/MasterDataController.php:33
  * @route '/master/{resource}'
  */
         indexForm.head = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -98,7 +98,7 @@ index.head = (args: { resource: string | number } | [resource: string | number ]
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\MasterDataController::store
- * @see app/Http/Controllers/MasterDataController.php:57
+ * @see app/Http/Controllers/MasterDataController.php:61
  * @route '/master/{resource}'
  */
 export const store = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\MasterDataController::store
- * @see app/Http/Controllers/MasterDataController.php:57
+ * @see app/Http/Controllers/MasterDataController.php:61
  * @route '/master/{resource}'
  */
 store.url = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -141,7 +141,7 @@ store.url = (args: { resource: string | number } | [resource: string | number ] 
 
 /**
 * @see \App\Http\Controllers\MasterDataController::store
- * @see app/Http/Controllers/MasterDataController.php:57
+ * @see app/Http/Controllers/MasterDataController.php:61
  * @route '/master/{resource}'
  */
 store.post = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -151,7 +151,7 @@ store.post = (args: { resource: string | number } | [resource: string | number ]
 
     /**
 * @see \App\Http\Controllers\MasterDataController::store
- * @see app/Http/Controllers/MasterDataController.php:57
+ * @see app/Http/Controllers/MasterDataController.php:61
  * @route '/master/{resource}'
  */
     const storeForm = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -161,7 +161,7 @@ store.post = (args: { resource: string | number } | [resource: string | number ]
 
             /**
 * @see \App\Http\Controllers\MasterDataController::store
- * @see app/Http/Controllers/MasterDataController.php:57
+ * @see app/Http/Controllers/MasterDataController.php:61
  * @route '/master/{resource}'
  */
         storeForm.post = (args: { resource: string | number } | [resource: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -172,7 +172,7 @@ store.post = (args: { resource: string | number } | [resource: string | number ]
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\MasterDataController::update
- * @see app/Http/Controllers/MasterDataController.php:70
+ * @see app/Http/Controllers/MasterDataController.php:74
  * @route '/master/{resource}/{id}'
  */
 export const update = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -187,7 +187,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\MasterDataController::update
- * @see app/Http/Controllers/MasterDataController.php:70
+ * @see app/Http/Controllers/MasterDataController.php:74
  * @route '/master/{resource}/{id}'
  */
 update.url = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions) => {
@@ -213,7 +213,7 @@ update.url = (args: { resource: string | number, id: string | number } | [resour
 
 /**
 * @see \App\Http\Controllers\MasterDataController::update
- * @see app/Http/Controllers/MasterDataController.php:70
+ * @see app/Http/Controllers/MasterDataController.php:74
  * @route '/master/{resource}/{id}'
  */
 update.put = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -223,7 +223,7 @@ update.put = (args: { resource: string | number, id: string | number } | [resour
 
     /**
 * @see \App\Http\Controllers\MasterDataController::update
- * @see app/Http/Controllers/MasterDataController.php:70
+ * @see app/Http/Controllers/MasterDataController.php:74
  * @route '/master/{resource}/{id}'
  */
     const updateForm = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -238,7 +238,7 @@ update.put = (args: { resource: string | number, id: string | number } | [resour
 
             /**
 * @see \App\Http\Controllers\MasterDataController::update
- * @see app/Http/Controllers/MasterDataController.php:70
+ * @see app/Http/Controllers/MasterDataController.php:74
  * @route '/master/{resource}/{id}'
  */
         updateForm.put = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -252,10 +252,93 @@ update.put = (args: { resource: string | number, id: string | number } | [resour
         })
     
     update.form = updateForm
+/**
+* @see \App\Http\Controllers\MasterDataController::destroy
+ * @see app/Http/Controllers/MasterDataController.php:93
+ * @route '/master/{resource}/{id}'
+ */
+export const destroy = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+destroy.definition = {
+    methods: ["delete"],
+    url: '/master/{resource}/{id}',
+} satisfies RouteDefinition<["delete"]>
+
+/**
+* @see \App\Http\Controllers\MasterDataController::destroy
+ * @see app/Http/Controllers/MasterDataController.php:93
+ * @route '/master/{resource}/{id}'
+ */
+destroy.url = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions) => {
+    if (Array.isArray(args)) {
+        args = {
+                    resource: args[0],
+                    id: args[1],
+                }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+                        resource: args.resource,
+                                id: args.id,
+                }
+
+    return destroy.definition.url
+            .replace('{resource}', parsedArgs.resource.toString())
+            .replace('{id}', parsedArgs.id.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\MasterDataController::destroy
+ * @see app/Http/Controllers/MasterDataController.php:93
+ * @route '/master/{resource}/{id}'
+ */
+destroy.delete = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+    /**
+* @see \App\Http\Controllers\MasterDataController::destroy
+ * @see app/Http/Controllers/MasterDataController.php:93
+ * @route '/master/{resource}/{id}'
+ */
+    const destroyForm = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: destroy.url(args, {
+                    [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                        _method: 'DELETE',
+                        ...(options?.query ?? options?.mergeQuery ?? {}),
+                    }
+                }),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\MasterDataController::destroy
+ * @see app/Http/Controllers/MasterDataController.php:93
+ * @route '/master/{resource}/{id}'
+ */
+        destroyForm.delete = (args: { resource: string | number, id: string | number } | [resource: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: destroy.url(args, {
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'DELETE',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'post',
+        })
+    
+    destroy.form = destroyForm
 const master = {
     index: Object.assign(index, index),
 store: Object.assign(store, store),
 update: Object.assign(update, update),
+destroy: Object.assign(destroy, destroy),
 }
 
 export default master

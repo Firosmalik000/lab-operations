@@ -13,9 +13,11 @@ use App\Models\Laboratory;
 use App\Models\MaterialUsage;
 use App\Models\StockMovement;
 use App\Models\Unit;
+use App\Services\AuditService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -41,7 +43,11 @@ class MaterialUsageController extends Controller
             'usages' => $query->latest('usage_date')->latest('id')->paginate(15)->withQueryString(),
             'filters' => $request->only(['search', 'laboratory_id', 'status', 'date_from', 'date_to']),
             'laboratories' => $this->laboratories($request),
-            'can' => ['create' => $user->can('material-usage.create'), 'void' => $user->can('material-usage.void')],
+            'can' => [
+                'create' => $user->can('material-usage.create'),
+                'void' => $user->can('material-usage.void'),
+                'delete' => $user->can('material-usage.delete') || $user->can('material-usage.update'),
+            ],
         ]);
     }
 
@@ -100,6 +106,7 @@ class MaterialUsageController extends Controller
             'balances' => $balanceWarnings,
             'canVoid' => $request->user()->can('material-usage.void'),
             'canUpdate' => $request->user()->can('material-usage.update'),
+            'canDelete' => ($request->user()->can('material-usage.delete') || $request->user()->can('material-usage.update')) && $materialUsage->status === MaterialUsageStatus::Draft,
         ]);
     }
 
@@ -129,6 +136,25 @@ class MaterialUsageController extends Controller
         $action->handle($materialUsage, $request->validated('reason'), $request->user());
 
         return back()->with('success', 'Transaksi dibatalkan dan pergerakan stok telah dibalik.');
+    }
+
+    public function destroy(Request $request, MaterialUsage $materialUsage, AuditService $audit): RedirectResponse
+    {
+        abort_unless($request->user()->canAccessLaboratory($materialUsage->laboratory_id), 403);
+        abort_unless($request->user()->can('material-usage.delete') || $request->user()->can('material-usage.update'), 403);
+
+        if ($materialUsage->status !== MaterialUsageStatus::Draft) {
+            return back()->with('error', 'Hanya draf penggunaan bahan yang dapat dihapus. Untuk transaksi yang sudah dicatat, gunakan batalkan transaksi (void).');
+        }
+
+        $old = $materialUsage->load('items')->toArray();
+        DB::transaction(function () use ($materialUsage, $audit, $request, $old): void {
+            $audit->record('delete', $materialUsage, $old, null, $request);
+            $materialUsage->items()->delete();
+            $materialUsage->delete();
+        });
+
+        return to_route('material-usages.index')->with('success', 'Draf penggunaan bahan berhasil dihapus.');
     }
 
     /** @return array<int, array{id: int, code: string, name: string}> */

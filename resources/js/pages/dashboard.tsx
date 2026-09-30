@@ -49,80 +49,91 @@ export default function Dashboard({
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
                 <PageHeading
                     title="Dashboard Laboratorium"
-                    description="Ringkasan aktivitas operasional yang paling relevan untuk Anda."
                     actions={
                         can.create_usage && (
-                            <Button asChild size="lg">
+                            <Button asChild size="sm" className="gap-1.5">
                                 <Link href="/material-usages/create">
-                                    <Plus aria-hidden="true" />
+                                    <Plus className="size-4" />
                                     Catat Penggunaan
                                 </Link>
                             </Button>
                         )
                     }
                 />
+
                 <section
                     aria-label="Ringkasan"
-                    className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                    className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                 >
                     {cards.map(([label, value, Icon]) => (
-                        <Card key={label}>
+                        <Card key={label} className="border bg-card shadow-xs">
                             <CardContent className="flex items-center justify-between p-5">
                                 <div>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
                                         {label}
                                     </p>
-                                    <p className="mt-1 text-3xl font-semibold tabular-nums">
+                                    <p className="mt-1.5 text-2xl font-bold tracking-tight text-foreground tabular-nums sm:text-3xl">
                                         {value}
                                     </p>
                                 </div>
-                                <span className="rounded-xl bg-primary/10 p-3 text-primary">
-                                    <Icon
-                                        className="size-5"
-                                        aria-hidden="true"
-                                    />
+                                <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <Icon className="size-5" />
                                 </span>
                             </CardContent>
                         </Card>
                     ))}
                 </section>
-                <Card>
-                    <CardHeader className="flex-row items-center justify-between">
-                        <CardTitle>Riwayat terbaru</CardTitle>
-                        <Button variant="ghost" asChild>
+
+                <Card className="border bg-card shadow-xs">
+                    <CardHeader className="flex-row items-center justify-between border-b pb-4">
+                        <CardTitle className="text-base font-semibold">
+                            Riwayat Terbaru
+                        </CardTitle>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                            className="text-xs"
+                        >
                             <Link href="/material-usages">Lihat semua</Link>
                         </Button>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         {recent.length === 0 ? (
-                            <EmptyState
-                                title="Belum ada penggunaan"
-                                description="Catat transaksi pertama untuk mulai membangun riwayat laboratorium."
-                            />
+                            <div className="py-10">
+                                <EmptyState
+                                    title="Belum ada transaksi"
+                                    description="Transaksi penggunaan bahan terbaru akan tampil di sini."
+                                />
+                            </div>
                         ) : (
-                            <div className="divide-y">
+                            <div className="divide-y divide-border/60">
                                 {recent.map((usage) => (
                                     <Link
                                         key={usage.id}
                                         href={`/material-usages/${usage.id}`}
-                                        className="flex min-h-16 items-center justify-between gap-4 rounded-lg px-2 py-3 transition-colors hover:bg-muted/60"
+                                        className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/40"
                                     >
                                         <div className="min-w-0">
-                                            <p className="truncate font-medium">
+                                            <p className="font-semibold text-primary">
                                                 {usage.number}
                                             </p>
-                                            <p className="truncate text-sm text-muted-foreground">
+                                            <p className="mt-0.5 text-xs text-muted-foreground">
                                                 {usage.laboratory.name} ·{' '}
                                                 {usage.creator.name} ·{' '}
-                                                {usage.items_count} item
+                                                {usage.items_count} item ·{' '}
+                                                {usage.usage_date}
                                             </p>
                                         </div>
                                         <Badge
                                             variant={
                                                 usage.status === 'VOIDED'
                                                     ? 'destructive'
-                                                    : 'secondary'
+                                                    : usage.status === 'DRAFT'
+                                                      ? 'outline'
+                                                      : 'secondary'
                                             }
+                                            className="text-xs"
                                         >
                                             {usage.status}
                                         </Badge>

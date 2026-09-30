@@ -1,13 +1,13 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Pencil, Plus, Search } from 'lucide-react';
+import { Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import InputError from '@/components/input-error';
-import { EmptyState } from '@/components/empty-state';
 import { PageHeading } from '@/components/page-heading';
-import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { type Column, DataTable } from '@/components/ui/data-table';
 import {
     Dialog,
     DialogContent,
@@ -24,6 +24,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+
 type Option = { id: number; name: string };
 type Unit = Option & { symbol: string };
 type Item = {
@@ -42,10 +43,12 @@ type Item = {
     default_unit: Unit | null;
     laboratories: Option[];
 };
+
 type Page<T> = {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
 };
+
 export default function Items({
     items,
     filters,
@@ -61,10 +64,13 @@ export default function Items({
     categories: (Option & { item_type_id: number })[];
     units: Unit[];
     laboratories: Option[];
-    can: { create: boolean; update: boolean };
+    can: { create: boolean; update: boolean; delete: boolean };
 }) {
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<Item | null>(null);
+    const [deletingItem, setDeletingItem] = useState<Item | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const form = useForm({
         code: '',
         name: '',
@@ -77,6 +83,7 @@ export default function Items({
         notes: '',
         laboratory_ids: [] as number[],
     });
+
     const show = (item?: Item) => {
         const value = item ?? null;
         setEditing(value);
@@ -95,6 +102,7 @@ export default function Items({
         form.clearErrors();
         setOpen(true);
     };
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         const options = {
@@ -104,24 +112,142 @@ export default function Items({
         if (editing) form.put(`/master/items/${editing.id}`, options);
         else form.post('/master/items', options);
     };
+
+    const confirmDelete = () => {
+        if (!deletingItem) return;
+        setIsDeleting(true);
+        router.delete(`/master/items/${deletingItem.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeletingItem(null),
+            onFinish: () => setIsDeleting(false),
+        });
+    };
+
+    const hasFilters = Boolean(
+        filters.search || filters.item_type_id || filters.inventory_mode,
+    );
+
+    const columns: Column<Item>[] = [
+        {
+            header: 'Item',
+            cell: (item) => (
+                <div className="min-w-[160px]">
+                    <p className="font-semibold text-foreground">{item.name}</p>
+                    <p className="font-mono text-xs text-muted-foreground">
+                        {item.code}
+                    </p>
+                </div>
+            ),
+        },
+        {
+            header: 'Jenis & Kategori',
+            className: 'hidden sm:table-cell',
+            cell: (item) => (
+                <div className="text-sm">
+                    <p className="text-foreground">{item.item_type?.name}</p>
+                    {item.category && (
+                        <p className="text-xs text-muted-foreground">
+                            {item.category.name}
+                        </p>
+                    )}
+                </div>
+            ),
+        },
+        {
+            header: 'Mode / Satuan',
+            className: 'hidden md:table-cell',
+            cell: (item) => (
+                <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant="outline" className="font-mono text-[11px]">
+                        {item.inventory_mode}
+                    </Badge>
+                    {item.default_unit && (
+                        <span className="text-xs text-muted-foreground">
+                            ({item.default_unit.symbol})
+                        </span>
+                    )}
+                </div>
+            ),
+        },
+        {
+            header: 'Laboratorium',
+            className: 'hidden lg:table-cell max-w-[200px]',
+            cell: (item) => (
+                <p
+                    className="truncate text-xs text-muted-foreground"
+                    title={item.laboratories.map((l) => l.name).join(', ')}
+                >
+                    {item.laboratories.length > 0
+                        ? item.laboratories.map((l) => l.name).join(', ')
+                        : '—'}
+                </p>
+            ),
+        },
+        {
+            header: 'Status',
+            cell: (item) => (
+                <Badge
+                    variant={item.is_active ? 'secondary' : 'outline'}
+                    className="text-xs"
+                >
+                    {item.is_active ? 'Aktif' : 'Nonaktif'}
+                </Badge>
+            ),
+        },
+        {
+            header: <span className="sr-only">Aksi</span>,
+            className: 'text-right whitespace-nowrap',
+            cell: (item) => (
+                <div className="flex items-center justify-end gap-1">
+                    {can.update && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => show(item)}
+                            title="Edit Item"
+                        >
+                            <Pencil className="size-3.5" />
+                        </Button>
+                    )}
+                    {can.delete && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeletingItem(item)}
+                            title="Hapus Item"
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
     return (
         <>
             <Head title="Master Item" />
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
                 <PageHeading
                     title="Master Item"
-                    description="Item historis dinonaktifkan, bukan dihapus. Mode inventory dapat diaktifkan dari titik waktu baru."
                     actions={
                         can.create && (
-                            <Button onClick={() => show()}>
-                                <Plus />
+                            <Button
+                                onClick={() => show()}
+                                size="sm"
+                                className="gap-1.5"
+                            >
+                                <Plus className="size-4" />
                                 Tambah Item
                             </Button>
                         )
                     }
                 />
+
                 <Card>
-                    <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr_200px_180px]">
+                    <CardContent className="grid gap-3 p-3.5 sm:grid-cols-[1fr_200px_180px_auto]">
                         <form
                             className="relative"
                             onSubmit={(e) => {
@@ -140,11 +266,11 @@ export default function Items({
                                 );
                             }}
                         >
-                            <Search className="absolute top-3 left-3 size-4 text-muted-foreground" />
+                            <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
                             <Input
                                 name="search"
                                 defaultValue={filters.search}
-                                className="pl-9"
+                                className="h-9 pl-9 text-sm"
                                 placeholder="Cari kode atau nama item…"
                             />
                         </form>
@@ -161,7 +287,7 @@ export default function Items({
                                 )
                             }
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-9 text-sm">
                                 <SelectValue placeholder="Semua jenis" />
                             </SelectTrigger>
                             <SelectContent>
@@ -189,8 +315,8 @@ export default function Items({
                                 )
                             }
                         >
-                            <SelectTrigger>
-                                <SelectValue />
+                            <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="Semua mode" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua mode</SelectItem>
@@ -201,101 +327,63 @@ export default function Items({
                                 ))}
                             </SelectContent>
                         </Select>
+                        {hasFilters && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 px-2.5 text-muted-foreground"
+                                onClick={() => router.get('/master/items')}
+                                title="Reset filter"
+                            >
+                                <RotateCcw className="size-4" />
+                            </Button>
+                        )}
                     </CardContent>
                 </Card>
-                {items.data.length === 0 ? (
-                    <EmptyState title="Item tidak ditemukan" />
-                ) : (
-                    <>
-                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                            {items.data.map((item) => (
-                                <Card key={item.id}>
-                                    <CardContent className="p-5">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <p className="truncate font-semibold">
-                                                    {item.name}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {item.code} ·{' '}
-                                                    {item.category?.name ??
-                                                        item.item_type.name}
-                                                </p>
-                                            </div>
-                                            {can.update && (
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    onClick={() => show(item)}
-                                                    aria-label={`Edit ${item.name}`}
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            <Badge variant="outline">
-                                                {item.inventory_mode}
-                                            </Badge>
-                                            <Badge
-                                                variant={
-                                                    item.is_active
-                                                        ? 'secondary'
-                                                        : 'outline'
-                                                }
-                                            >
-                                                {item.is_active
-                                                    ? 'Aktif'
-                                                    : 'Nonaktif'}
-                                            </Badge>
-                                            {item.default_unit && (
-                                                <Badge variant="outline">
-                                                    {item.default_unit.symbol}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <p className="mt-4 line-clamp-1 text-sm text-muted-foreground">
-                                            {item.laboratories
-                                                .map((lab) => lab.name)
-                                                .join(', ')}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                        <Pagination links={items.links} />
-                    </>
-                )}
+
+                <DataTable
+                    data={items.data}
+                    columns={columns}
+                    keyExtractor={(item) => item.id}
+                    paginationLinks={items.links}
+                    emptyTitle="Tidak ada item"
+                    emptyDescription="Ubah filter pencarian atau buat item baru."
+                />
+
                 <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
                         <form onSubmit={submit}>
                             <DialogHeader>
                                 <DialogTitle>
                                     {editing ? 'Edit Item' : 'Tambah Item'}
                                 </DialogTitle>
                             </DialogHeader>
-                            <div className="my-5 grid gap-4 sm:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label>Kode</Label>
+                            <div className="my-4 grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="item-code">Kode Item</Label>
                                     <Input
+                                        id="item-code"
                                         value={form.data.code}
                                         onChange={(e) =>
                                             form.setData('code', e.target.value)
                                         }
+                                        placeholder="cth. ITM-001"
                                     />
                                     <InputError message={form.errors.code} />
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label>Nama</Label>
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="item-name">Nama Item</Label>
                                     <Input
+                                        id="item-name"
                                         value={form.data.name}
                                         onChange={(e) =>
                                             form.setData('name', e.target.value)
                                         }
+                                        placeholder="cth. Nutrient Agar"
                                     />
                                     <InputError message={form.errors.name} />
                                 </div>
-                                <div className="grid gap-2">
+                                <div className="grid gap-1.5">
                                     <Label>Jenis Item</Label>
                                     <Select
                                         value={
@@ -326,7 +414,7 @@ export default function Items({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="grid gap-2">
+                                <div className="grid gap-1.5">
                                     <Label>Kategori</Label>
                                     <Select
                                         value={
@@ -342,7 +430,7 @@ export default function Items({
                                         }
                                     >
                                         <SelectTrigger>
-                                            <SelectValue />
+                                            <SelectValue placeholder="Pilih kategori" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">
@@ -350,24 +438,22 @@ export default function Items({
                                             </SelectItem>
                                             {categories
                                                 .filter(
-                                                    (category) =>
-                                                        category.item_type_id ===
+                                                    (c) =>
+                                                        c.item_type_id ===
                                                         form.data.item_type_id,
                                                 )
-                                                .map((category) => (
+                                                .map((c) => (
                                                     <SelectItem
-                                                        key={category.id}
-                                                        value={String(
-                                                            category.id,
-                                                        )}
+                                                        key={c.id}
+                                                        value={String(c.id)}
                                                     >
-                                                        {category.name}
+                                                        {c.name}
                                                     </SelectItem>
                                                 ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="grid gap-2">
+                                <div className="grid gap-1.5">
                                     <Label>Mode Inventory</Label>
                                     <Select
                                         value={form.data.inventory_mode}
@@ -392,7 +478,7 @@ export default function Items({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="grid gap-2">
+                                <div className="grid gap-1.5">
                                     <Label>Satuan Default</Label>
                                     <Select
                                         value={
@@ -410,7 +496,7 @@ export default function Items({
                                         }
                                     >
                                         <SelectTrigger>
-                                            <SelectValue />
+                                            <SelectValue placeholder="Pilih satuan" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">
@@ -428,9 +514,12 @@ export default function Items({
                                     </Select>
                                 </div>
                                 {form.data.inventory_mode === 'STOCK' && (
-                                    <div className="grid gap-2">
-                                        <Label>Stok Minimum</Label>
+                                    <div className="grid gap-1.5 sm:col-span-2">
+                                        <Label htmlFor="item-min-stock">
+                                            Stok Minimum
+                                        </Label>
                                         <Input
+                                            id="item-min-stock"
                                             type="number"
                                             min="0"
                                             step="any"
@@ -441,6 +530,7 @@ export default function Items({
                                                     e.target.value,
                                                 )
                                             }
+                                            placeholder="0"
                                         />
                                         <InputError
                                             message={form.errors.minimum_stock}
@@ -455,10 +545,11 @@ export default function Items({
                                         {laboratories.map((lab) => (
                                             <label
                                                 key={lab.id}
-                                                className="flex min-h-11 items-center gap-3 rounded-lg border px-3"
+                                                className="flex min-h-10 items-center gap-2.5 rounded-lg border px-3 text-sm transition-colors hover:bg-muted/30"
                                             >
                                                 <input
                                                     type="checkbox"
+                                                    className="rounded border-input text-primary focus:ring-primary"
                                                     checked={form.data.laboratory_ids.includes(
                                                         lab.id,
                                                     )}
@@ -488,9 +579,10 @@ export default function Items({
                                         message={form.errors.laboratory_ids}
                                     />
                                 </fieldset>
-                                <label className="flex min-h-11 items-center gap-3 rounded-lg border px-3 sm:col-span-2">
+                                <label className="flex min-h-10 items-center gap-2.5 rounded-lg border px-3 text-sm transition-colors hover:bg-muted/30 sm:col-span-2">
                                     <input
                                         type="checkbox"
+                                        className="rounded border-input text-primary focus:ring-primary"
                                         checked={form.data.is_active}
                                         onChange={(e) =>
                                             form.setData(
@@ -499,11 +591,10 @@ export default function Items({
                                             )
                                         }
                                     />
-                                    Item aktif dan dapat dipilih pada transaksi
-                                    baru
+                                    Aktif
                                 </label>
                             </div>
-                            <DialogFooter>
+                            <DialogFooter className="gap-2 sm:gap-0">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -521,10 +612,19 @@ export default function Items({
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                <ConfirmDeleteDialog
+                    open={Boolean(deletingItem)}
+                    onOpenChange={(v) => !v && setDeletingItem(null)}
+                    itemName={deletingItem?.name}
+                    loading={isDeleting}
+                    onConfirm={confirmDelete}
+                />
             </div>
         </>
     );
 }
+
 Items.layout = {
     breadcrumbs: [
         { title: 'Master Data', href: '/master/items' },

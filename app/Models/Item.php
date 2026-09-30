@@ -66,4 +66,10 @@ class Item extends Model
     {
         return $this->hasMany(StockMovement::class);
     }
+
+    /** @return HasMany<MaterialUsageItem, $this> */
+    public function materialUsageItems(): HasMany
+    {
+        return $this->hasMany(MaterialUsageItem::class);
+    }
 }

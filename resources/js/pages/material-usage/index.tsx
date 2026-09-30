@@ -1,12 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
+import { Eye, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { EmptyState } from '@/components/empty-state';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { PageHeading } from '@/components/page-heading';
-import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { type Column, DataTable } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -26,6 +26,7 @@ type Usage = {
     laboratory: { name: string };
     creator: { name: string };
 };
+
 type Page<T> = {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
@@ -40,52 +41,170 @@ export default function UsageIndex({
     usages: Page<Usage>;
     filters: Record<string, string>;
     laboratories: { id: number; name: string }[];
-    can: { create: boolean };
+    can: { create: boolean; void: boolean; delete: boolean };
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const [deletingUsage, setDeletingUsage] = useState<Usage | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const apply = (data: Record<string, string>) =>
         router.get(
             '/material-usages',
             { ...filters, ...data },
             { preserveState: true, replace: true },
         );
+
+    const confirmDelete = () => {
+        if (!deletingUsage) return;
+        setIsDeleting(true);
+        router.delete(`/material-usages/${deletingUsage.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeletingUsage(null),
+            onFinish: () => setIsDeleting(false),
+        });
+    };
+
+    const hasFilters = Boolean(
+        filters.search || filters.laboratory_id || filters.status,
+    );
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'VOIDED':
+                return (
+                    <Badge variant="destructive" className="text-xs">
+                        VOIDED
+                    </Badge>
+                );
+            case 'DRAFT':
+                return (
+                    <Badge variant="outline" className="text-xs">
+                        DRAFT
+                    </Badge>
+                );
+            case 'SUBMITTED':
+            default:
+                return (
+                    <Badge variant="secondary" className="text-xs">
+                        SUBMITTED
+                    </Badge>
+                );
+        }
+    };
+
+    const columns: Column<Usage>[] = [
+        {
+            header: 'Nomor & Tanggal',
+            cell: (usage) => (
+                <div className="min-w-[150px]">
+                    <Link
+                        href={`/material-usages/${usage.id}`}
+                        className="font-semibold text-primary hover:underline"
+                    >
+                        {usage.number}
+                    </Link>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                        {usage.usage_date}
+                    </p>
+                </div>
+            ),
+        },
+        {
+            header: 'Laboratorium',
+            cell: (usage) => (
+                <span className="text-sm font-medium text-foreground">
+                    {usage.laboratory.name}
+                </span>
+            ),
+        },
+        {
+            header: 'Keperluan',
+            className: 'hidden sm:table-cell max-w-xs',
+            cell: (usage) => (
+                <p className="truncate text-xs text-muted-foreground">
+                    {usage.purpose || '—'}
+                </p>
+            ),
+        },
+        {
+            header: 'Petugas',
+            className: 'hidden md:table-cell text-xs text-muted-foreground',
+            cell: (usage) => usage.creator.name,
+        },
+        {
+            header: 'Item',
+            className: 'tabular-nums text-sm',
+            cell: (usage) => `${usage.items_count} item`,
+        },
+        {
+            header: 'Status',
+            cell: (usage) => getStatusBadge(usage.status),
+        },
+        {
+            header: <span className="sr-only">Aksi</span>,
+            className: 'text-right whitespace-nowrap',
+            cell: (usage) => (
+                <div className="flex items-center justify-end gap-1">
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 text-muted-foreground hover:text-foreground"
+                        asChild
+                        title="Lihat Detail"
+                    >
+                        <Link href={`/material-usages/${usage.id}`}>
+                            <Eye className="size-3.5" />
+                        </Link>
+                    </Button>
+                    {usage.status === 'DRAFT' && can.delete && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeletingUsage(usage)}
+                            title="Hapus Draf"
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
     return (
         <>
             <Head title="Riwayat Penggunaan" />
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
                 <PageHeading
                     title="Riwayat Penggunaan"
-                    description="Telusuri transaksi per laboratorium, tanggal, petugas, atau status."
                     actions={
                         can.create && (
-                            <Button asChild>
+                            <Button asChild size="sm" className="gap-1.5">
                                 <Link href="/material-usages/create">
-                                    <Plus aria-hidden="true" />
+                                    <Plus className="size-4" />
                                     Catat Penggunaan
                                 </Link>
                             </Button>
                         )
                     }
                 />
+
                 <Card>
-                    <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr_220px_180px_auto]">
+                    <CardContent className="grid gap-3 p-3.5 sm:grid-cols-[1fr_200px_160px_auto]">
                         <form
                             className="relative"
-                            onSubmit={(event) => {
-                                event.preventDefault();
+                            onSubmit={(e) => {
+                                e.preventDefault();
                                 apply({ search });
                             }}
                         >
-                            <Search
-                                className="absolute top-3 left-3 size-4 text-muted-foreground"
-                                aria-hidden="true"
-                            />
+                            <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
                             <Input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="pl-9"
+                                className="h-9 pl-9 text-sm"
                                 placeholder="Cari nomor atau keperluan…"
-                                aria-label="Cari transaksi"
                             />
                         </form>
                         <Select
@@ -96,8 +215,8 @@ export default function UsageIndex({
                                 })
                             }
                         >
-                            <SelectTrigger aria-label="Filter laboratorium">
-                                <SelectValue placeholder="Semua laboratorium" />
+                            <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="Semua lab" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">
@@ -119,8 +238,8 @@ export default function UsageIndex({
                                 apply({ status: value === 'all' ? '' : value })
                             }
                         >
-                            <SelectTrigger aria-label="Filter status">
-                                <SelectValue />
+                            <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="Semua status" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">
@@ -133,134 +252,38 @@ export default function UsageIndex({
                                 <SelectItem value="VOIDED">VOIDED</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button
-                            variant="outline"
-                            onClick={() => router.get('/material-usages')}
-                        >
-                            Reset
-                        </Button>
+                        {hasFilters && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 px-2.5 text-muted-foreground"
+                                onClick={() => router.get('/material-usages')}
+                                title="Reset filter"
+                            >
+                                <RotateCcw className="size-4" />
+                            </Button>
+                        )}
                     </CardContent>
                 </Card>
-                {usages.data.length === 0 ? (
-                    <EmptyState
-                        title="Transaksi tidak ditemukan"
-                        description="Ubah filter atau catat penggunaan bahan baru."
-                    />
-                ) : (
-                    <>
-                        <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
-                            <table className="w-full text-sm">
-                                <thead className="bg-muted/50 text-left text-muted-foreground">
-                                    <tr>
-                                        <th className="p-4">Nomor / Tanggal</th>
-                                        <th className="p-4">Laboratorium</th>
-                                        <th className="p-4">Keperluan</th>
-                                        <th className="p-4">Petugas</th>
-                                        <th className="p-4">Item</th>
-                                        <th className="p-4">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y">
-                                    {usages.data.map((usage) => (
-                                        <tr
-                                            key={usage.id}
-                                            className="hover:bg-muted/30"
-                                        >
-                                            <td className="p-4">
-                                                <Link
-                                                    className="font-medium text-primary hover:underline"
-                                                    href={`/material-usages/${usage.id}`}
-                                                >
-                                                    {usage.number}
-                                                </Link>
-                                                <p className="text-muted-foreground">
-                                                    {usage.usage_date}
-                                                </p>
-                                            </td>
-                                            <td className="p-4">
-                                                {usage.laboratory.name}
-                                            </td>
-                                            <td className="max-w-xs p-4">
-                                                {usage.purpose || '—'}
-                                            </td>
-                                            <td className="p-4">
-                                                {usage.creator.name}
-                                            </td>
-                                            <td className="p-4 tabular-nums">
-                                                {usage.items_count}
-                                            </td>
-                                            <td className="p-4">
-                                                <Badge
-                                                    variant={
-                                                        usage.status ===
-                                                        'VOIDED'
-                                                            ? 'destructive'
-                                                            : 'secondary'
-                                                    }
-                                                >
-                                                    {usage.status}
-                                                </Badge>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="grid gap-3 md:hidden">
-                            {usages.data.map((usage) => (
-                                <Link
-                                    href={`/material-usages/${usage.id}`}
-                                    key={usage.id}
-                                    className="rounded-xl border bg-card p-4 shadow-sm"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="font-semibold text-primary">
-                                                {usage.number}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {usage.usage_date}
-                                            </p>
-                                        </div>
-                                        <Badge
-                                            variant={
-                                                usage.status === 'VOIDED'
-                                                    ? 'destructive'
-                                                    : 'secondary'
-                                            }
-                                        >
-                                            {usage.status}
-                                        </Badge>
-                                    </div>
-                                    <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                                        <div>
-                                            <dt className="text-muted-foreground">
-                                                Laboratorium
-                                            </dt>
-                                            <dd>{usage.laboratory.name}</dd>
-                                        </div>
-                                        <div>
-                                            <dt className="text-muted-foreground">
-                                                Petugas
-                                            </dt>
-                                            <dd>{usage.creator.name}</dd>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <dt className="text-muted-foreground">
-                                                Keperluan
-                                            </dt>
-                                            <dd>
-                                                {usage.purpose || '—'} ·{' '}
-                                                {usage.items_count} item
-                                            </dd>
-                                        </div>
-                                    </dl>
-                                </Link>
-                            ))}
-                        </div>
-                        <Pagination links={usages.links} />
-                    </>
-                )}
+
+                <DataTable
+                    data={usages.data}
+                    columns={columns}
+                    keyExtractor={(usage) => usage.id}
+                    paginationLinks={usages.links}
+                    emptyTitle="Transaksi tidak ditemukan"
+                    emptyDescription="Ubah filter pencarian atau catat penggunaan bahan baru."
+                />
+
+                <ConfirmDeleteDialog
+                    open={Boolean(deletingUsage)}
+                    onOpenChange={(v) => !v && setDeletingUsage(null)}
+                    itemName={deletingUsage?.number}
+                    title="Hapus Draf Penggunaan"
+                    description="Draf penggunaan bahan ini akan dihapus permanen beserta seluruh item di dalamnya."
+                    loading={isDeleting}
+                    onConfirm={confirmDelete}
+                />
             </div>
         </>
     );

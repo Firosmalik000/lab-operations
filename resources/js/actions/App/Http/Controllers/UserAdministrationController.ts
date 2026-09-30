@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\UserAdministrationController::store
- * @see app/Http/Controllers/UserAdministrationController.php:60
+ * @see app/Http/Controllers/UserAdministrationController.php:64
  * @route '/administration/users'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\UserAdministrationController::store
- * @see app/Http/Controllers/UserAdministrationController.php:60
+ * @see app/Http/Controllers/UserAdministrationController.php:64
  * @route '/administration/users'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserAdministrationController::store
- * @see app/Http/Controllers/UserAdministrationController.php:60
+ * @see app/Http/Controllers/UserAdministrationController.php:64
  * @route '/administration/users'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\UserAdministrationController::store
- * @see app/Http/Controllers/UserAdministrationController.php:60
+ * @see app/Http/Controllers/UserAdministrationController.php:64
  * @route '/administration/users'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\UserAdministrationController::store
- * @see app/Http/Controllers/UserAdministrationController.php:60
+ * @see app/Http/Controllers/UserAdministrationController.php:64
  * @route '/administration/users'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -134,7 +134,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\UserAdministrationController::update
- * @see app/Http/Controllers/UserAdministrationController.php:29
+ * @see app/Http/Controllers/UserAdministrationController.php:33
  * @route '/administration/users/{user}'
  */
 export const update = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -149,7 +149,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\UserAdministrationController::update
- * @see app/Http/Controllers/UserAdministrationController.php:29
+ * @see app/Http/Controllers/UserAdministrationController.php:33
  * @route '/administration/users/{user}'
  */
 update.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -182,7 +182,7 @@ update.url = (args: { user: number | { id: number } } | [user: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\UserAdministrationController::update
- * @see app/Http/Controllers/UserAdministrationController.php:29
+ * @see app/Http/Controllers/UserAdministrationController.php:33
  * @route '/administration/users/{user}'
  */
 update.put = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -192,7 +192,7 @@ update.put = (args: { user: number | { id: number } } | [user: number | { id: nu
 
     /**
 * @see \App\Http\Controllers\UserAdministrationController::update
- * @see app/Http/Controllers/UserAdministrationController.php:29
+ * @see app/Http/Controllers/UserAdministrationController.php:33
  * @route '/administration/users/{user}'
  */
     const updateForm = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ update.put = (args: { user: number | { id: number } } | [user: number | { id: nu
 
             /**
 * @see \App\Http\Controllers\UserAdministrationController::update
- * @see app/Http/Controllers/UserAdministrationController.php:29
+ * @see app/Http/Controllers/UserAdministrationController.php:33
  * @route '/administration/users/{user}'
  */
         updateForm.put = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -221,6 +221,95 @@ update.put = (args: { user: number | { id: number } } | [user: number | { id: nu
         })
     
     update.form = updateForm
-const UserAdministrationController = { index, store, update }
+/**
+* @see \App\Http\Controllers\UserAdministrationController::destroy
+ * @see app/Http/Controllers/UserAdministrationController.php:96
+ * @route '/administration/users/{user}'
+ */
+export const destroy = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+destroy.definition = {
+    methods: ["delete"],
+    url: '/administration/users/{user}',
+} satisfies RouteDefinition<["delete"]>
+
+/**
+* @see \App\Http\Controllers\UserAdministrationController::destroy
+ * @see app/Http/Controllers/UserAdministrationController.php:96
+ * @route '/administration/users/{user}'
+ */
+destroy.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { user: args }
+    }
+
+            if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+            args = { user: args.id }
+        }
+    
+    if (Array.isArray(args)) {
+        args = {
+                    user: args[0],
+                }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+                        user: typeof args.user === 'object'
+                ? args.user.id
+                : args.user,
+                }
+
+    return destroy.definition.url
+            .replace('{user}', parsedArgs.user.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\UserAdministrationController::destroy
+ * @see app/Http/Controllers/UserAdministrationController.php:96
+ * @route '/administration/users/{user}'
+ */
+destroy.delete = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+    /**
+* @see \App\Http\Controllers\UserAdministrationController::destroy
+ * @see app/Http/Controllers/UserAdministrationController.php:96
+ * @route '/administration/users/{user}'
+ */
+    const destroyForm = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: destroy.url(args, {
+                    [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                        _method: 'DELETE',
+                        ...(options?.query ?? options?.mergeQuery ?? {}),
+                    }
+                }),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\UserAdministrationController::destroy
+ * @see app/Http/Controllers/UserAdministrationController.php:96
+ * @route '/administration/users/{user}'
+ */
+        destroyForm.delete = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: destroy.url(args, {
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'DELETE',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'post',
+        })
+    
+    destroy.form = destroyForm
+const UserAdministrationController = { index, store, update, destroy }
 
 export default UserAdministrationController

@@ -40,7 +40,11 @@ class ItemController extends Controller
             'items' => $query->orderBy($sort, $direction)->paginate(15)->withQueryString(),
             'filters' => $request->only(['search', 'item_type_id', 'category_id', 'inventory_mode', 'active', 'sort', 'direction']),
             ...$this->options($request),
-            'can' => ['create' => $request->user()->can('items.create'), 'update' => $request->user()->can('items.update')],
+            'can' => [
+                'create' => $request->user()->can('items.create'),
+                'update' => $request->user()->can('items.update'),
+                'delete' => $request->user()->can('items.delete'),
+            ],
         ]);
     }
 
@@ -77,7 +81,28 @@ class ItemController extends Controller
             $audit->record('update', $item, $old, $item->fresh()->toArray(), $request);
         });
 
-        return back()->with('success', 'Item berhasil diperbarui. Perubahan mode inventory tidak mengubah transaksi lama.');
+        return back()->with('success', 'Item berhasil diperbarui.');
+    }
+
+    public function destroy(Request $request, Item $item, AuditService $audit): RedirectResponse
+    {
+        abort_unless($request->user()->can('items.delete'), 403);
+        if (! $request->user()->hasRole('super-admin') && ! $item->laboratories()->whereIn('laboratories.id', $request->user()->laboratoryIds())->exists()) {
+            abort(403);
+        }
+
+        if ($item->stockMovements()->exists() || $item->materialUsageItems()->exists()) {
+            return back()->with('error', 'Item tidak dapat dihapus karena sudah memiliki riwayat mutasi stok atau penggunaan. Anda dapat menonaktifkannya.');
+        }
+
+        $old = $item->toArray();
+        DB::transaction(function () use ($item, $audit, $request, $old): void {
+            $item->laboratories()->detach();
+            $audit->record('delete', $item, $old, null, $request);
+            $item->delete();
+        });
+
+        return back()->with('success', 'Item berhasil dihapus.');
     }
 
     /** @return array<string, mixed> */

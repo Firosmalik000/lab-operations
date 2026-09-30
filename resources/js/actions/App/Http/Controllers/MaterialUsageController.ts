@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MaterialUsageController::items
- * @see app/Http/Controllers/MaterialUsageController.php:62
+ * @see app/Http/Controllers/MaterialUsageController.php:68
  * @route '/material-usages/items'
  */
 export const items = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ items.definition = {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::items
- * @see app/Http/Controllers/MaterialUsageController.php:62
+ * @see app/Http/Controllers/MaterialUsageController.php:68
  * @route '/material-usages/items'
  */
 items.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ items.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::items
- * @see app/Http/Controllers/MaterialUsageController.php:62
+ * @see app/Http/Controllers/MaterialUsageController.php:68
  * @route '/material-usages/items'
  */
 items.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ items.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\MaterialUsageController::items
- * @see app/Http/Controllers/MaterialUsageController.php:62
+ * @see app/Http/Controllers/MaterialUsageController.php:68
  * @route '/material-usages/items'
  */
 items.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ items.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\MaterialUsageController::items
- * @see app/Http/Controllers/MaterialUsageController.php:62
+ * @see app/Http/Controllers/MaterialUsageController.php:68
  * @route '/material-usages/items'
  */
     const itemsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ items.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\MaterialUsageController::items
- * @see app/Http/Controllers/MaterialUsageController.php:62
+ * @see app/Http/Controllers/MaterialUsageController.php:68
  * @route '/material-usages/items'
  */
         itemsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ items.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\MaterialUsageController::items
- * @see app/Http/Controllers/MaterialUsageController.php:62
+ * @see app/Http/Controllers/MaterialUsageController.php:68
  * @route '/material-usages/items'
  */
         itemsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ items.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     items.form = itemsForm
 /**
 * @see \App\Http\Controllers\MaterialUsageController::index
- * @see app/Http/Controllers/MaterialUsageController.php:24
+ * @see app/Http/Controllers/MaterialUsageController.php:26
  * @route '/material-usages'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::index
- * @see app/Http/Controllers/MaterialUsageController.php:24
+ * @see app/Http/Controllers/MaterialUsageController.php:26
  * @route '/material-usages'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::index
- * @see app/Http/Controllers/MaterialUsageController.php:24
+ * @see app/Http/Controllers/MaterialUsageController.php:26
  * @route '/material-usages'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -112,7 +112,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\MaterialUsageController::index
- * @see app/Http/Controllers/MaterialUsageController.php:24
+ * @see app/Http/Controllers/MaterialUsageController.php:26
  * @route '/material-usages'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -122,7 +122,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\MaterialUsageController::index
- * @see app/Http/Controllers/MaterialUsageController.php:24
+ * @see app/Http/Controllers/MaterialUsageController.php:26
  * @route '/material-usages'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -132,7 +132,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\MaterialUsageController::index
- * @see app/Http/Controllers/MaterialUsageController.php:24
+ * @see app/Http/Controllers/MaterialUsageController.php:26
  * @route '/material-usages'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -141,7 +141,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\MaterialUsageController::index
- * @see app/Http/Controllers/MaterialUsageController.php:24
+ * @see app/Http/Controllers/MaterialUsageController.php:26
  * @route '/material-usages'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -157,7 +157,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\MaterialUsageController::create
- * @see app/Http/Controllers/MaterialUsageController.php:48
+ * @see app/Http/Controllers/MaterialUsageController.php:54
  * @route '/material-usages/create'
  */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -172,7 +172,7 @@ create.definition = {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::create
- * @see app/Http/Controllers/MaterialUsageController.php:48
+ * @see app/Http/Controllers/MaterialUsageController.php:54
  * @route '/material-usages/create'
  */
 create.url = (options?: RouteQueryOptions) => {
@@ -181,7 +181,7 @@ create.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::create
- * @see app/Http/Controllers/MaterialUsageController.php:48
+ * @see app/Http/Controllers/MaterialUsageController.php:54
  * @route '/material-usages/create'
  */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -190,7 +190,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\MaterialUsageController::create
- * @see app/Http/Controllers/MaterialUsageController.php:48
+ * @see app/Http/Controllers/MaterialUsageController.php:54
  * @route '/material-usages/create'
  */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -200,7 +200,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\MaterialUsageController::create
- * @see app/Http/Controllers/MaterialUsageController.php:48
+ * @see app/Http/Controllers/MaterialUsageController.php:54
  * @route '/material-usages/create'
  */
     const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -210,7 +210,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\MaterialUsageController::create
- * @see app/Http/Controllers/MaterialUsageController.php:48
+ * @see app/Http/Controllers/MaterialUsageController.php:54
  * @route '/material-usages/create'
  */
         createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -219,7 +219,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\MaterialUsageController::create
- * @see app/Http/Controllers/MaterialUsageController.php:48
+ * @see app/Http/Controllers/MaterialUsageController.php:54
  * @route '/material-usages/create'
  */
         createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -235,7 +235,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     create.form = createForm
 /**
 * @see \App\Http\Controllers\MaterialUsageController::store
- * @see app/Http/Controllers/MaterialUsageController.php:81
+ * @see app/Http/Controllers/MaterialUsageController.php:87
  * @route '/material-usages'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -250,7 +250,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::store
- * @see app/Http/Controllers/MaterialUsageController.php:81
+ * @see app/Http/Controllers/MaterialUsageController.php:87
  * @route '/material-usages'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -259,7 +259,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::store
- * @see app/Http/Controllers/MaterialUsageController.php:81
+ * @see app/Http/Controllers/MaterialUsageController.php:87
  * @route '/material-usages'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -269,7 +269,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\MaterialUsageController::store
- * @see app/Http/Controllers/MaterialUsageController.php:81
+ * @see app/Http/Controllers/MaterialUsageController.php:87
  * @route '/material-usages'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -279,7 +279,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\MaterialUsageController::store
- * @see app/Http/Controllers/MaterialUsageController.php:81
+ * @see app/Http/Controllers/MaterialUsageController.php:87
  * @route '/material-usages'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -290,7 +290,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\MaterialUsageController::edit
- * @see app/Http/Controllers/MaterialUsageController.php:106
+ * @see app/Http/Controllers/MaterialUsageController.php:113
  * @route '/material-usages/{materialUsage}/edit'
  */
 export const edit = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -305,7 +305,7 @@ edit.definition = {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::edit
- * @see app/Http/Controllers/MaterialUsageController.php:106
+ * @see app/Http/Controllers/MaterialUsageController.php:113
  * @route '/material-usages/{materialUsage}/edit'
  */
 edit.url = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -338,7 +338,7 @@ edit.url = (args: { materialUsage: number | { id: number } } | [materialUsage: n
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::edit
- * @see app/Http/Controllers/MaterialUsageController.php:106
+ * @see app/Http/Controllers/MaterialUsageController.php:113
  * @route '/material-usages/{materialUsage}/edit'
  */
 edit.get = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -347,7 +347,7 @@ edit.get = (args: { materialUsage: number | { id: number } } | [materialUsage: n
 })
 /**
 * @see \App\Http\Controllers\MaterialUsageController::edit
- * @see app/Http/Controllers/MaterialUsageController.php:106
+ * @see app/Http/Controllers/MaterialUsageController.php:113
  * @route '/material-usages/{materialUsage}/edit'
  */
 edit.head = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -357,7 +357,7 @@ edit.head = (args: { materialUsage: number | { id: number } } | [materialUsage: 
 
     /**
 * @see \App\Http\Controllers\MaterialUsageController::edit
- * @see app/Http/Controllers/MaterialUsageController.php:106
+ * @see app/Http/Controllers/MaterialUsageController.php:113
  * @route '/material-usages/{materialUsage}/edit'
  */
     const editForm = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -367,7 +367,7 @@ edit.head = (args: { materialUsage: number | { id: number } } | [materialUsage: 
 
             /**
 * @see \App\Http\Controllers\MaterialUsageController::edit
- * @see app/Http/Controllers/MaterialUsageController.php:106
+ * @see app/Http/Controllers/MaterialUsageController.php:113
  * @route '/material-usages/{materialUsage}/edit'
  */
         editForm.get = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -376,7 +376,7 @@ edit.head = (args: { materialUsage: number | { id: number } } | [materialUsage: 
         })
             /**
 * @see \App\Http\Controllers\MaterialUsageController::edit
- * @see app/Http/Controllers/MaterialUsageController.php:106
+ * @see app/Http/Controllers/MaterialUsageController.php:113
  * @route '/material-usages/{materialUsage}/edit'
  */
         editForm.head = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -392,7 +392,7 @@ edit.head = (args: { materialUsage: number | { id: number } } | [materialUsage: 
     edit.form = editForm
 /**
 * @see \App\Http\Controllers\MaterialUsageController::update
- * @see app/Http/Controllers/MaterialUsageController.php:119
+ * @see app/Http/Controllers/MaterialUsageController.php:126
  * @route '/material-usages/{materialUsage}'
  */
 export const update = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -407,7 +407,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::update
- * @see app/Http/Controllers/MaterialUsageController.php:119
+ * @see app/Http/Controllers/MaterialUsageController.php:126
  * @route '/material-usages/{materialUsage}'
  */
 update.url = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -440,7 +440,7 @@ update.url = (args: { materialUsage: number | { id: number } } | [materialUsage:
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::update
- * @see app/Http/Controllers/MaterialUsageController.php:119
+ * @see app/Http/Controllers/MaterialUsageController.php:126
  * @route '/material-usages/{materialUsage}'
  */
 update.put = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -450,7 +450,7 @@ update.put = (args: { materialUsage: number | { id: number } } | [materialUsage:
 
     /**
 * @see \App\Http\Controllers\MaterialUsageController::update
- * @see app/Http/Controllers/MaterialUsageController.php:119
+ * @see app/Http/Controllers/MaterialUsageController.php:126
  * @route '/material-usages/{materialUsage}'
  */
     const updateForm = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -465,7 +465,7 @@ update.put = (args: { materialUsage: number | { id: number } } | [materialUsage:
 
             /**
 * @see \App\Http\Controllers\MaterialUsageController::update
- * @see app/Http/Controllers/MaterialUsageController.php:119
+ * @see app/Http/Controllers/MaterialUsageController.php:126
  * @route '/material-usages/{materialUsage}'
  */
         updateForm.put = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -481,7 +481,7 @@ update.put = (args: { materialUsage: number | { id: number } } | [materialUsage:
     update.form = updateForm
 /**
 * @see \App\Http\Controllers\MaterialUsageController::show
- * @see app/Http/Controllers/MaterialUsageController.php:88
+ * @see app/Http/Controllers/MaterialUsageController.php:94
  * @route '/material-usages/{materialUsage}'
  */
 export const show = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -496,7 +496,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::show
- * @see app/Http/Controllers/MaterialUsageController.php:88
+ * @see app/Http/Controllers/MaterialUsageController.php:94
  * @route '/material-usages/{materialUsage}'
  */
 show.url = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -529,7 +529,7 @@ show.url = (args: { materialUsage: number | { id: number } } | [materialUsage: n
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::show
- * @see app/Http/Controllers/MaterialUsageController.php:88
+ * @see app/Http/Controllers/MaterialUsageController.php:94
  * @route '/material-usages/{materialUsage}'
  */
 show.get = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -538,7 +538,7 @@ show.get = (args: { materialUsage: number | { id: number } } | [materialUsage: n
 })
 /**
 * @see \App\Http\Controllers\MaterialUsageController::show
- * @see app/Http/Controllers/MaterialUsageController.php:88
+ * @see app/Http/Controllers/MaterialUsageController.php:94
  * @route '/material-usages/{materialUsage}'
  */
 show.head = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -548,7 +548,7 @@ show.head = (args: { materialUsage: number | { id: number } } | [materialUsage: 
 
     /**
 * @see \App\Http\Controllers\MaterialUsageController::show
- * @see app/Http/Controllers/MaterialUsageController.php:88
+ * @see app/Http/Controllers/MaterialUsageController.php:94
  * @route '/material-usages/{materialUsage}'
  */
     const showForm = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -558,7 +558,7 @@ show.head = (args: { materialUsage: number | { id: number } } | [materialUsage: 
 
             /**
 * @see \App\Http\Controllers\MaterialUsageController::show
- * @see app/Http/Controllers/MaterialUsageController.php:88
+ * @see app/Http/Controllers/MaterialUsageController.php:94
  * @route '/material-usages/{materialUsage}'
  */
         showForm.get = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -567,7 +567,7 @@ show.head = (args: { materialUsage: number | { id: number } } | [materialUsage: 
         })
             /**
 * @see \App\Http\Controllers\MaterialUsageController::show
- * @see app/Http/Controllers/MaterialUsageController.php:88
+ * @see app/Http/Controllers/MaterialUsageController.php:94
  * @route '/material-usages/{materialUsage}'
  */
         showForm.head = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -583,7 +583,7 @@ show.head = (args: { materialUsage: number | { id: number } } | [materialUsage: 
     show.form = showForm
 /**
 * @see \App\Http\Controllers\MaterialUsageController::voidMethod
- * @see app/Http/Controllers/MaterialUsageController.php:126
+ * @see app/Http/Controllers/MaterialUsageController.php:133
  * @route '/material-usages/{materialUsage}/void'
  */
 export const voidMethod = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -598,7 +598,7 @@ voidMethod.definition = {
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::voidMethod
- * @see app/Http/Controllers/MaterialUsageController.php:126
+ * @see app/Http/Controllers/MaterialUsageController.php:133
  * @route '/material-usages/{materialUsage}/void'
  */
 voidMethod.url = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -631,7 +631,7 @@ voidMethod.url = (args: { materialUsage: number | { id: number } } | [materialUs
 
 /**
 * @see \App\Http\Controllers\MaterialUsageController::voidMethod
- * @see app/Http/Controllers/MaterialUsageController.php:126
+ * @see app/Http/Controllers/MaterialUsageController.php:133
  * @route '/material-usages/{materialUsage}/void'
  */
 voidMethod.post = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -641,7 +641,7 @@ voidMethod.post = (args: { materialUsage: number | { id: number } } | [materialU
 
     /**
 * @see \App\Http\Controllers\MaterialUsageController::voidMethod
- * @see app/Http/Controllers/MaterialUsageController.php:126
+ * @see app/Http/Controllers/MaterialUsageController.php:133
  * @route '/material-usages/{materialUsage}/void'
  */
     const voidMethodForm = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -651,7 +651,7 @@ voidMethod.post = (args: { materialUsage: number | { id: number } } | [materialU
 
             /**
 * @see \App\Http\Controllers\MaterialUsageController::voidMethod
- * @see app/Http/Controllers/MaterialUsageController.php:126
+ * @see app/Http/Controllers/MaterialUsageController.php:133
  * @route '/material-usages/{materialUsage}/void'
  */
         voidMethodForm.post = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -660,6 +660,95 @@ voidMethod.post = (args: { materialUsage: number | { id: number } } | [materialU
         })
     
     voidMethod.form = voidMethodForm
-const MaterialUsageController = { items, index, create, store, edit, update, show, voidMethod, void: voidMethod }
+/**
+* @see \App\Http\Controllers\MaterialUsageController::destroy
+ * @see app/Http/Controllers/MaterialUsageController.php:141
+ * @route '/material-usages/{materialUsage}'
+ */
+export const destroy = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+destroy.definition = {
+    methods: ["delete"],
+    url: '/material-usages/{materialUsage}',
+} satisfies RouteDefinition<["delete"]>
+
+/**
+* @see \App\Http\Controllers\MaterialUsageController::destroy
+ * @see app/Http/Controllers/MaterialUsageController.php:141
+ * @route '/material-usages/{materialUsage}'
+ */
+destroy.url = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { materialUsage: args }
+    }
+
+            if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+            args = { materialUsage: args.id }
+        }
+    
+    if (Array.isArray(args)) {
+        args = {
+                    materialUsage: args[0],
+                }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+                        materialUsage: typeof args.materialUsage === 'object'
+                ? args.materialUsage.id
+                : args.materialUsage,
+                }
+
+    return destroy.definition.url
+            .replace('{materialUsage}', parsedArgs.materialUsage.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\MaterialUsageController::destroy
+ * @see app/Http/Controllers/MaterialUsageController.php:141
+ * @route '/material-usages/{materialUsage}'
+ */
+destroy.delete = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: destroy.url(args, options),
+    method: 'delete',
+})
+
+    /**
+* @see \App\Http\Controllers\MaterialUsageController::destroy
+ * @see app/Http/Controllers/MaterialUsageController.php:141
+ * @route '/material-usages/{materialUsage}'
+ */
+    const destroyForm = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: destroy.url(args, {
+                    [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                        _method: 'DELETE',
+                        ...(options?.query ?? options?.mergeQuery ?? {}),
+                    }
+                }),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\MaterialUsageController::destroy
+ * @see app/Http/Controllers/MaterialUsageController.php:141
+ * @route '/material-usages/{materialUsage}'
+ */
+        destroyForm.delete = (args: { materialUsage: number | { id: number } } | [materialUsage: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: destroy.url(args, {
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'DELETE',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'post',
+        })
+    
+    destroy.form = destroyForm
+const MaterialUsageController = { items, index, create, store, edit, update, show, voidMethod, destroy, void: voidMethod }
 
 export default MaterialUsageController

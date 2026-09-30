@@ -24,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('material-usages/{materialUsage}', [MaterialUsageController::class, 'update'])->name('material-usages.update');
     Route::get('material-usages/{materialUsage}', [MaterialUsageController::class, 'show'])->middleware('can:material-usage.view')->name('material-usages.show');
     Route::post('material-usages/{materialUsage}/void', [MaterialUsageController::class, 'void'])->name('material-usages.void');
+    Route::delete('material-usages/{materialUsage}', [MaterialUsageController::class, 'destroy'])->name('material-usages.destroy');
 
     Route::get('inventory/stock', [InventoryController::class, 'stock'])->middleware('can:inventory.view')->name('inventory.stock');
     Route::get('inventory/movements', [InventoryController::class, 'movements'])->middleware('can:inventory.view')->name('inventory.movements');
@@ -33,9 +34,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('master/items', [ItemController::class, 'index'])->middleware('can:items.view')->name('items.index');
     Route::post('master/items', [ItemController::class, 'store'])->name('items.store');
     Route::put('master/items/{item}', [ItemController::class, 'update'])->name('items.update');
+    Route::delete('master/items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
     Route::get('master/{resource}', [MasterDataController::class, 'index'])->whereIn('resource', ['laboratories', 'item-types', 'categories', 'units', 'storage-locations'])->name('master.index');
     Route::post('master/{resource}', [MasterDataController::class, 'store'])->whereIn('resource', ['laboratories', 'item-types', 'categories', 'units', 'storage-locations'])->name('master.store');
     Route::put('master/{resource}/{id}', [MasterDataController::class, 'update'])->whereIn('resource', ['laboratories', 'item-types', 'categories', 'units', 'storage-locations'])->name('master.update');
+    Route::delete('master/{resource}/{id}', [MasterDataController::class, 'destroy'])->whereIn('resource', ['laboratories', 'item-types', 'categories', 'units', 'storage-locations'])->name('master.destroy');
 
     Route::get('reports', [ReportController::class, 'index'])->middleware('can:reports.view')->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->middleware('can:reports.view')->name('reports.export');
@@ -43,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('administration/users', [UserAdministrationController::class, 'index'])->middleware('can:users.manage')->name('users.index');
     Route::post('administration/users', [UserAdministrationController::class, 'store'])->middleware('can:users.manage')->name('users.store');
     Route::put('administration/users/{user}', [UserAdministrationController::class, 'update'])->middleware('can:users.manage')->name('users.update');
+    Route::delete('administration/users/{user}', [UserAdministrationController::class, 'destroy'])->middleware('can:users.manage')->name('users.destroy');
     Route::get('administration/roles', [RoleAdministrationController::class, 'index'])->middleware('can:roles.manage')->name('roles.index');
     Route::put('administration/roles/{role}', [RoleAdministrationController::class, 'update'])->middleware('can:roles.manage')->name('roles.update');
 });

@@ -322,23 +322,22 @@ export default function CreateUsage({
                             ? 'Ubah Draft Penggunaan'
                             : 'Catat Penggunaan Bahan'
                     }
-                    description="Identitas petugas diambil otomatis dari akun yang sedang masuk."
                 />
-                <div className="grid max-w-sm gap-2">
-                    <Label>Status penyimpanan</Label>
+                <div className="grid max-w-xs gap-1.5">
+                    <Label>Status</Label>
                     <Select
                         value={form.data.status}
                         onValueChange={(value) => form.setData('status', value)}
                     >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="DRAFT">
-                                Draft — belum mengurangi stok
+                                Draft (Belum Kurangi Stok)
                             </SelectItem>
                             <SelectItem value="SUBMITTED">
-                                Submit — catat penggunaan stok
+                                Submit (Potong Stok)
                             </SelectItem>
                         </SelectContent>
                     </Select>

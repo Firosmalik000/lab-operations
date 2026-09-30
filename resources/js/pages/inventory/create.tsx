@@ -65,10 +65,7 @@ export default function InventoryCreate({
                 onSubmit={submit}
                 className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:p-8"
             >
-                <PageHeading
-                    title={labels[type]}
-                    description="Setiap perubahan disimpan sebagai pergerakan yang dapat ditelusuri."
-                />
+                <PageHeading title={labels[type]} />
                 <Card>
                     <CardHeader>
                         <CardTitle>Detail Pergerakan</CardTitle>

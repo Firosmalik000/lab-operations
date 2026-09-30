@@ -1,12 +1,15 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     Ban,
     CalendarDays,
     FlaskConical,
+    Pencil,
+    Trash2,
     UserRound,
 } from 'lucide-react';
 import { useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import InputError from '@/components/input-error';
 import { PageHeading } from '@/components/page-heading';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -54,13 +57,18 @@ export default function UsageShow({
     usage,
     canVoid,
     canUpdate,
+    canDelete = false,
 }: {
     usage: Usage;
     canVoid: boolean;
     canUpdate: boolean;
+    canDelete?: boolean;
 }) {
     const [open, setOpen] = useState(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const form = useForm({ reason: '' });
+
     const submitVoid = (event: React.FormEvent) => {
         event.preventDefault();
         form.post(`/material-usages/${usage.id}/void`, {
@@ -68,40 +76,63 @@ export default function UsageShow({
             onSuccess: () => setOpen(false),
         });
     };
+
+    const handleDeleteDraft = () => {
+        setIsDeleting(true);
+        router.delete(`/material-usages/${usage.id}`, {
+            preserveScroll: true,
+            onFinish: () => setIsDeleting(false),
+        });
+    };
+
     return (
         <>
             <Head title={usage.number} />
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
                 <PageHeading
                     title={usage.number}
-                    description="Detail transaksi penggunaan bahan."
                     actions={
-                        <>
-                            <Button asChild variant="outline">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button asChild variant="outline" size="sm">
                                 <Link href="/material-usages">
-                                    <ArrowLeft aria-hidden="true" />
+                                    <ArrowLeft className="size-4" />
                                     Kembali
                                 </Link>
                             </Button>
+                            {canUpdate && usage.status === 'DRAFT' && (
+                                <Button asChild size="sm">
+                                    <Link
+                                        href={`/material-usages/${usage.id}/edit`}
+                                    >
+                                        <Pencil className="size-4" />
+                                        Edit Draf
+                                    </Link>
+                                </Button>
+                            )}
+                            {canDelete && usage.status === 'DRAFT' && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-destructive hover:bg-destructive/10"
+                                    onClick={() => setConfirmDeleteOpen(true)}
+                                >
+                                    <Trash2 className="size-4" />
+                                    Hapus Draf
+                                </Button>
+                            )}
                             {canVoid && usage.status === 'SUBMITTED' && (
                                 <Button
                                     variant="destructive"
+                                    size="sm"
                                     onClick={() => setOpen(true)}
                                 >
-                                    <Ban aria-hidden="true" />
+                                    <Ban className="size-4" />
                                     Batalkan
                                 </Button>
                             )}
-                        </>
+                        </div>
                     }
                 />
-                {canUpdate && usage.status === 'DRAFT' && (
-                    <Button asChild className="self-start">
-                        <Link href={`/material-usages/${usage.id}/edit`}>
-                            Ubah atau Submit Draft
-                        </Link>
-                    </Button>
-                )}
                 {usage.status === 'VOIDED' && (
                     <Alert variant="destructive">
                         <Ban aria-hidden="true" />
@@ -300,6 +331,16 @@ export default function UsageShow({
                         </form>
                     </DialogContent>
                 </Dialog>
+
+                <ConfirmDeleteDialog
+                    open={confirmDeleteOpen}
+                    onOpenChange={setConfirmDeleteOpen}
+                    itemName={usage.number}
+                    title="Hapus Draf Penggunaan"
+                    description="Draf penggunaan bahan ini akan dihapus permanen beserta seluruh item di dalamnya."
+                    loading={isDeleting}
+                    onConfirm={handleDeleteDraft}
+                />
             </div>
         </>
     );

@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\ItemType;
 use App\Models\Laboratory;
+use App\Models\MaterialUsage;
+use App\Models\StockMovement;
 use App\Models\StorageLocation;
 use App\Models\Unit;
 use App\Services\AuditService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -84,6 +88,53 @@ class MasterDataController extends Controller
         $audit->record('update', $record, $old, $record->fresh()->toArray(), $request);
 
         return back()->with('success', "{$config['label']} berhasil diperbarui.");
+    }
+
+    public function destroy(Request $request, string $resource, int $id, AuditService $audit): RedirectResponse
+    {
+        $config = $this->resource($request, $resource);
+        if ($resource === 'laboratories' && ! $request->user()->hasRole('super-admin')) {
+            abort(403);
+        }
+        $model = $config['model'];
+        $record = $model::findOrFail($id);
+
+        if (! $request->user()->hasRole('super-admin') && $resource === 'storage-locations') {
+            $laboratoryId = $record->getAttribute('laboratory_id');
+            if ($laboratoryId !== null && ! in_array((int) $laboratoryId, $request->user()->laboratoryIds(), true)) {
+                abort(403);
+            }
+        }
+
+        if ($resource === 'laboratories') {
+            if ($record->users()->exists() || $record->items()->exists() || StockMovement::where('laboratory_id', $id)->exists() || MaterialUsage::where('laboratory_id', $id)->exists()) {
+                return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan oleh user, item, atau transaksi.");
+            }
+        } elseif ($resource === 'item-types') {
+            if (ItemCategory::where('item_type_id', $id)->exists() || Item::where('item_type_id', $id)->exists()) {
+                return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan oleh kategori atau item.");
+            }
+        } elseif ($resource === 'categories') {
+            if (Item::where('category_id', $id)->exists()) {
+                return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan oleh item.");
+            }
+        } elseif ($resource === 'units') {
+            if (Item::where('default_unit_id', $id)->exists() || StockMovement::where('unit_id', $id)->exists()) {
+                return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan oleh item atau mutasi stok.");
+            }
+        } elseif ($resource === 'storage-locations') {
+            if (StockMovement::where('storage_location_id', $id)->exists()) {
+                return back()->with('error', "{$config['label']} tidak dapat dihapus karena masih digunakan dalam riwayat mutasi stok.");
+            }
+        }
+
+        $old = $record->toArray();
+        DB::transaction(function () use ($record, $audit, $request, $old): void {
+            $audit->record('delete', $record, $old, null, $request);
+            $record->delete();
+        });
+
+        return back()->with('success', "{$config['label']} berhasil dihapus.");
     }
 
     /** @return array{model: class-string<Model>, permission: string, label: string} */

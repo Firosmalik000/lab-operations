@@ -241,6 +241,73 @@ class LaboratoryOperationsTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_staff_without_permission_cannot_delete_item(): void
+    {
+        $item = $this->item('DEL-1', InventoryMode::Stock);
+
+        $this->actingAs($this->staff)->delete("/master/items/{$item->id}")->assertForbidden();
+    }
+
+    public function test_super_admin_can_delete_clean_item(): void
+    {
+        $admin = User::factory()->create();
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+        $item = $this->item('DEL-2', InventoryMode::Stock);
+
+        $this->actingAs($admin)->delete("/master/items/{$item->id}")->assertSessionHas('success');
+        $this->assertDatabaseMissing('items', ['id' => $item->id]);
+    }
+
+    public function test_item_with_stock_movement_cannot_be_deleted(): void
+    {
+        $admin = User::factory()->create();
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+        $item = $this->item('DEL-3', InventoryMode::Stock);
+
+        StockMovement::create([
+            'item_id' => $item->id,
+            'laboratory_id' => $this->laboratory->id,
+            'type' => 'RECEIVING',
+            'quantity' => 10,
+            'unit_id' => $this->unit->id,
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)->delete("/master/items/{$item->id}")->assertSessionHas('error');
+        $this->assertDatabaseHas('items', ['id' => $item->id]);
+    }
+
+    public function test_user_cannot_delete_self_or_last_super_admin(): void
+    {
+        $admin = User::factory()->create();
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+
+        // Self-delete attempt
+        $this->actingAs($admin)->delete("/administration/users/{$admin->id}")->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+    }
+
+    public function test_can_delete_draft_material_usage_but_not_submitted(): void
+    {
+        $admin = User::factory()->create();
+        $admin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+
+        $draft = MaterialUsage::create([
+            'number' => 'DRAFT-001',
+            'usage_date' => '2026-09-29',
+            'laboratory_id' => $this->laboratory->id,
+            'status' => 'DRAFT',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)->delete("/material-usages/{$draft->id}")->assertSessionHas('success');
+        $this->assertDatabaseMissing('material_usages', ['id' => $draft->id]);
+
+        $submitted = $this->usage($this->laboratory, 'SUB-001');
+        $this->actingAs($admin)->delete("/material-usages/{$submitted->id}")->assertSessionHas('error');
+        $this->assertDatabaseHas('material_usages', ['id' => $submitted->id]);
+    }
+
     private function item(string $code, InventoryMode $mode, bool $active = true, bool $mapped = true): Item
     {
         $item = Item::create([

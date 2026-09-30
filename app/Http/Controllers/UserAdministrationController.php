@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Laboratory;
+use App\Models\MaterialUsage;
 use App\Models\Role;
+use App\Models\StockMovement;
 use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
@@ -23,12 +25,16 @@ class UserAdministrationController extends Controller
             'users' => User::with(['roles:id,name,label', 'laboratories:id,name', 'defaultLaboratory:id,name'])->orderBy('name')->paginate(20),
             'roles' => Role::orderBy('label')->get(['id', 'name', 'label']),
             'laboratories' => Laboratory::orderBy('name')->get(['id', 'name']),
+            'can' => [
+                'manage' => $request->user()->can('users.manage'),
+            ],
+            'currentUserId' => $request->user()->id,
         ]);
     }
 
     public function update(Request $request, User $user, AuditService $audit): RedirectResponse
     {
-        abort_unless($request->user()->can('roles.manage'), 403);
+        abort_unless($request->user()->can('users.manage'), 403);
         $data = $request->validate([
             'role_ids' => ['required', 'array', 'min:1'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
@@ -59,7 +65,7 @@ class UserAdministrationController extends Controller
 
     public function store(Request $request, AuditService $audit): RedirectResponse
     {
-        abort_unless($request->user()->can('roles.manage'), 403);
+        abort_unless($request->user()->can('users.manage'), 403);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
@@ -87,5 +93,40 @@ class UserAdministrationController extends Controller
         });
 
         return back()->with('success', "User {$user->name} berhasil dibuat.");
+    }
+
+    public function destroy(Request $request, User $user, AuditService $audit): RedirectResponse
+    {
+        abort_unless($request->user()->can('users.manage'), 403);
+
+        if ($request->user()->id === $user->id) {
+            return back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+        }
+
+        $superAdminId = Role::where('name', 'super-admin')->value('id');
+        $isSuperAdmin = $user->roles()->whereKey($superAdminId)->exists();
+        if ($isSuperAdmin && User::where('is_active', true)->whereHas('roles', fn ($q) => $q->where('roles.id', $superAdminId))->count() <= 1) {
+            return back()->with('error', 'Super Admin aktif terakhir tidak dapat dihapus.');
+        }
+
+        if (StockMovement::where('created_by', $user->id)->exists() || MaterialUsage::where('created_by', $user->id)->exists()) {
+            return back()->with('error', 'User tidak dapat dihapus karena memiliki riwayat transaksi tercatat. Anda dapat menonaktifkan status akunnya.');
+        }
+
+        $old = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'roles' => $user->roles()->pluck('roles.id'),
+            'laboratories' => $user->laboratories()->pluck('laboratories.id'),
+        ];
+
+        DB::transaction(function () use ($user, $audit, $request, $old): void {
+            $user->roles()->detach();
+            $user->laboratories()->detach();
+            $audit->record('delete', $user, $old, null, $request);
+            $user->delete();
+        });
+
+        return back()->with('success', "User {$user->name} berhasil dihapus.");
     }
 }
