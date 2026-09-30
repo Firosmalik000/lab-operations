@@ -5,6 +5,7 @@ import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -210,6 +211,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 ))}
                             </div>
                         </div>
+                        <ThemeToggle />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
