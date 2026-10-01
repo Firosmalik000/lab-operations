@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\InventoryMode;
+use App\Enums\MaterialUsageStatus;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\ItemType;
 use App\Models\Laboratory;
 use App\Models\MaterialUsage;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\StockMovement;
 use App\Models\Unit;
@@ -306,6 +308,99 @@ class LaboratoryOperationsTest extends TestCase
         $submitted = $this->usage($this->laboratory, 'SUB-001');
         $this->actingAs($admin)->delete("/material-usages/{$submitted->id}")->assertSessionHas('error');
         $this->assertDatabaseHas('material_usages', ['id' => $submitted->id]);
+    }
+
+    public function test_material_usage_update_and_delete_permissions_are_independent(): void
+    {
+        $draft = $this->usage($this->laboratory, 'DRAFT-PERMISSION-001');
+        $draft->update(['status' => 'DRAFT']);
+
+        $updateRole = Role::create(['name' => 'usage-editor', 'label' => 'Usage Editor']);
+        $updateRole->permissions()->attach(Permission::where('name', 'material-usage.update')->firstOrFail());
+        $editor = User::factory()->create();
+        $editor->roles()->attach($updateRole);
+        $editor->laboratories()->attach($this->laboratory);
+
+        $this->actingAs($editor)->get("/material-usages/{$draft->id}/edit")->assertOk();
+        $this->delete("/material-usages/{$draft->id}")->assertForbidden();
+        $this->assertDatabaseHas('material_usages', ['id' => $draft->id]);
+
+        $deleteRole = Role::create(['name' => 'usage-deleter', 'label' => 'Usage Deleter']);
+        $deleteRole->permissions()->attach(Permission::where('name', 'material-usage.delete')->firstOrFail());
+        $deleter = User::factory()->create();
+        $deleter->roles()->attach($deleteRole);
+        $deleter->laboratories()->attach($this->laboratory);
+
+        $this->actingAs($deleter)->get("/material-usages/{$draft->id}/edit")->assertForbidden();
+        $this->delete("/material-usages/{$draft->id}")->assertSessionHas('success');
+        $this->assertDatabaseMissing('material_usages', ['id' => $draft->id]);
+    }
+
+    public function test_voided_usage_can_be_edited_and_resubmitted_without_duplicating_stock(): void
+    {
+        $item = $this->item('RESUBMIT-VOIDED', InventoryMode::Stock);
+        $supervisor = User::factory()->create();
+        $supervisor->roles()->attach(Role::where('name', 'supervisor')->firstOrFail());
+        $supervisor->laboratories()->attach($this->laboratory);
+
+        $this->actingAs($this->staff)->post('/material-usages', $this->payload([$item], '5'))->assertRedirect();
+        $usage = MaterialUsage::firstOrFail();
+        $this->actingAs($supervisor)->post("/material-usages/{$usage->id}/void", ['reason' => 'Jumlah perlu diperbaiki'])->assertRedirect();
+
+        $payload = $this->payload([$item], '7');
+        $payload['status'] = 'SUBMITTED';
+        $this->put("/material-usages/{$usage->id}", $payload)->assertRedirect();
+
+        $this->assertSame(MaterialUsageStatus::Submitted, $usage->fresh()->status);
+        $this->assertNull($usage->fresh()->void_reason);
+        $this->assertDatabaseCount('stock_movements', 1);
+        $this->assertSame(-7.0, (float) StockMovement::sum('quantity'));
+
+        $this->post("/material-usages/{$usage->id}/void", ['reason' => 'Dibatalkan kembali'])->assertRedirect();
+        $this->assertDatabaseCount('stock_movements', 2);
+        $this->assertSame(0.0, (float) StockMovement::sum('quantity'));
+    }
+
+    public function test_voided_usage_can_be_deleted_with_its_stock_movements(): void
+    {
+        $item = $this->item('DELETE-VOIDED', InventoryMode::Stock);
+        $supervisor = User::factory()->create();
+        $supervisor->roles()->attach(Role::where('name', 'supervisor')->firstOrFail());
+        $supervisor->laboratories()->attach($this->laboratory);
+
+        $this->actingAs($this->staff)->post('/material-usages', $this->payload([$item], '3'))->assertRedirect();
+        $usage = MaterialUsage::firstOrFail();
+        $this->actingAs($supervisor)->post("/material-usages/{$usage->id}/void", ['reason' => 'Transaksi salah input'])->assertRedirect();
+        $this->assertDatabaseCount('stock_movements', 2);
+
+        $this->delete("/material-usages/{$usage->id}")->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('material_usages', ['id' => $usage->id]);
+        $this->assertDatabaseMissing('material_usage_items', ['material_usage_id' => $usage->id]);
+        $this->assertDatabaseMissing('stock_movements', [
+            'reference_type' => MaterialUsage::class,
+            'reference_id' => $usage->id,
+        ]);
+    }
+
+    public function test_super_admin_receives_material_usage_history_actions(): void
+    {
+        $superAdmin = User::factory()->create();
+        $superAdmin->roles()->attach(Role::where('name', 'super-admin')->firstOrFail());
+
+        $this->actingAs($superAdmin)->get('/material-usages')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('can.create', true)
+                ->where('can.update', true)
+                ->where('can.delete', true));
+
+        $draft = $this->usage($this->otherLaboratory, 'DRAFT-SUPER-ADMIN-001');
+        $draft->update(['status' => 'DRAFT']);
+
+        $this->get("/material-usages/{$draft->id}/edit")->assertOk();
+        $this->delete("/material-usages/{$draft->id}")->assertSessionHas('success');
+        $this->assertDatabaseMissing('material_usages', ['id' => $draft->id]);
     }
 
     public function test_decimal_inputs_are_limited_to_maximum_two_decimal_places(): void

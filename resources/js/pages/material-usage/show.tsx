@@ -99,27 +99,35 @@ export default function UsageShow({
                                     Kembali
                                 </Link>
                             </Button>
-                            {canUpdate && usage.status === 'DRAFT' && (
-                                <Button asChild size="sm">
-                                    <Link
-                                        href={`/material-usages/${usage.id}/edit`}
+                            {canUpdate &&
+                                ['DRAFT', 'VOIDED'].includes(usage.status) && (
+                                    <Button asChild size="sm">
+                                        <Link
+                                            href={`/material-usages/${usage.id}/edit`}
+                                        >
+                                            <Pencil className="size-4" />
+                                            {usage.status === 'VOIDED'
+                                                ? 'Edit & Submit Ulang'
+                                                : 'Edit Draf'}
+                                        </Link>
+                                    </Button>
+                                )}
+                            {canDelete &&
+                                ['DRAFT', 'VOIDED'].includes(usage.status) && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-destructive hover:bg-destructive/10"
+                                        onClick={() =>
+                                            setConfirmDeleteOpen(true)
+                                        }
                                     >
-                                        <Pencil className="size-4" />
-                                        Edit Draf
-                                    </Link>
-                                </Button>
-                            )}
-                            {canDelete && usage.status === 'DRAFT' && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-destructive hover:bg-destructive/10"
-                                    onClick={() => setConfirmDeleteOpen(true)}
-                                >
-                                    <Trash2 className="size-4" />
-                                    Hapus Draf
-                                </Button>
-                            )}
+                                        <Trash2 className="size-4" />
+                                        {usage.status === 'VOIDED'
+                                            ? 'Hapus VOIDED'
+                                            : 'Hapus Draf'}
+                                    </Button>
+                                )}
                             {canVoid && usage.status === 'SUBMITTED' && (
                                 <Button
                                     variant="destructive"
@@ -343,8 +351,12 @@ export default function UsageShow({
                     open={confirmDeleteOpen}
                     onOpenChange={setConfirmDeleteOpen}
                     itemName={usage.number}
-                    title="Hapus Draf Penggunaan"
-                    description="Draf penggunaan bahan ini akan dihapus permanen beserta seluruh item di dalamnya."
+                    title={
+                        usage.status === 'VOIDED'
+                            ? 'Hapus Transaksi VOIDED'
+                            : 'Hapus Draf Penggunaan'
+                    }
+                    description="Transaksi penggunaan ini akan dihapus permanen beserta seluruh item dan movement stok terkait."
                     loading={isDeleting}
                     onConfirm={handleDeleteDraft}
                 />

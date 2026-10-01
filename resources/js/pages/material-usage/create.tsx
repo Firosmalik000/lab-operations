@@ -227,6 +227,7 @@ function ItemSearch({
 
 type Draft = {
     id: number;
+    status: 'DRAFT' | 'VOIDED';
     usage_date: string;
     purpose: string | null;
     notes: string | null;
@@ -252,7 +253,7 @@ export default function CreateUsage({
         laboratory_id: defaultLaboratoryId,
         purpose: draft?.purpose ?? '',
         notes: draft?.notes ?? '',
-        status: draft ? 'DRAFT' : 'SUBMITTED',
+        status: draft?.status === 'DRAFT' ? 'DRAFT' : 'SUBMITTED',
         items: (draft?.items ?? []).map(
             ({ item_id, quantity, unit_id, notes }) => ({
                 item_id,
@@ -319,7 +320,9 @@ export default function CreateUsage({
                 <PageHeading
                     title={
                         draft
-                            ? 'Ubah Draft Penggunaan'
+                            ? draft.status === 'VOIDED'
+                                ? 'Edit & Submit Ulang Penggunaan'
+                                : 'Ubah Draft Penggunaan'
                             : 'Catat Penggunaan Bahan'
                     }
                 />

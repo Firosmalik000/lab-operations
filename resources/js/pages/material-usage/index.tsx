@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { PageHeading } from '@/components/page-heading';
@@ -41,7 +41,7 @@ export default function UsageIndex({
     usages: Page<Usage>;
     filters: Record<string, string>;
     laboratories: { id: number; name: string }[];
-    can: { create: boolean; void: boolean; delete: boolean };
+    can: { create: boolean; update: boolean; delete: boolean };
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [deletingUsage, setDeletingUsage] = useState<Usage | null>(null);
@@ -156,17 +156,42 @@ export default function UsageIndex({
                             <Eye className="size-3.5" />
                         </Link>
                     </Button>
-                    {usage.status === 'DRAFT' && can.delete && (
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="size-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => setDeletingUsage(usage)}
-                            title="Hapus Draf"
-                        >
-                            <Trash2 className="size-3.5" />
-                        </Button>
-                    )}
+                    {['DRAFT', 'VOIDED'].includes(usage.status) &&
+                        can.update && (
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-muted-foreground hover:text-foreground"
+                                asChild
+                                title={
+                                    usage.status === 'VOIDED'
+                                        ? 'Edit & Submit Ulang'
+                                        : 'Edit Draf'
+                                }
+                            >
+                                <Link
+                                    href={`/material-usages/${usage.id}/edit`}
+                                >
+                                    <Pencil className="size-3.5" />
+                                </Link>
+                            </Button>
+                        )}
+                    {['DRAFT', 'VOIDED'].includes(usage.status) &&
+                        can.delete && (
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-muted-foreground hover:text-destructive"
+                                onClick={() => setDeletingUsage(usage)}
+                                title={
+                                    usage.status === 'VOIDED'
+                                        ? 'Hapus Transaksi VOIDED'
+                                        : 'Hapus Draf'
+                                }
+                            >
+                                <Trash2 className="size-3.5" />
+                            </Button>
+                        )}
                 </div>
             ),
         },
@@ -279,8 +304,12 @@ export default function UsageIndex({
                     open={Boolean(deletingUsage)}
                     onOpenChange={(v) => !v && setDeletingUsage(null)}
                     itemName={deletingUsage?.number}
-                    title="Hapus Draf Penggunaan"
-                    description="Draf penggunaan bahan ini akan dihapus permanen beserta seluruh item di dalamnya."
+                    title={
+                        deletingUsage?.status === 'VOIDED'
+                            ? 'Hapus Transaksi VOIDED'
+                            : 'Hapus Draf Penggunaan'
+                    }
+                    description="Transaksi penggunaan ini akan dihapus permanen beserta seluruh item dan movement stok terkait."
                     loading={isDeleting}
                     onConfirm={confirmDelete}
                 />

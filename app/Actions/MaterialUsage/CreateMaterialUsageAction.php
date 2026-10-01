@@ -31,29 +31,45 @@ class CreateMaterialUsageAction
      *     items: list<array{item_id: int, quantity: int|float|string, unit_id: int, notes?: string|null}>
      * } $data
      */
-    public function handle(array $data, User $actor, ?MaterialUsage $draft = null): MaterialUsage
+    public function handle(array $data, User $actor, ?MaterialUsage $existingUsage = null): MaterialUsage
     {
-        return DB::transaction(function () use ($data, $actor, $draft): MaterialUsage {
+        return DB::transaction(function () use ($data, $actor, $existingUsage): MaterialUsage {
             $date = Carbon::parse($data['usage_date']);
-            if ($draft !== null) {
-                $draft = MaterialUsage::whereKey($draft->id)->lockForUpdate()->firstOrFail();
-                abort_unless($actor->can('material-usage.update') && $actor->canAccessLaboratory($draft->laboratory_id), 403);
-                if ($draft->status !== MaterialUsageStatus::Draft) {
-                    throw ValidationException::withMessages(['status' => 'Hanya draft yang dapat diubah.']);
+            if ($existingUsage !== null) {
+                $existingUsage = MaterialUsage::whereKey($existingUsage->id)->lockForUpdate()->firstOrFail();
+                abort_unless($actor->can('material-usage.update') && $actor->canAccessLaboratory($existingUsage->laboratory_id), 403);
+                if (! in_array($existingUsage->status, [MaterialUsageStatus::Draft, MaterialUsageStatus::Voided], true)) {
+                    throw ValidationException::withMessages(['status' => 'Hanya transaksi DRAFT atau VOIDED yang dapat diubah.']);
                 }
             }
-            $before = $draft?->load('items')->toArray();
+            $before = $existingUsage?->load('items')->toArray();
+            if ($existingUsage?->status === MaterialUsageStatus::Voided) {
+                $before['stock_movements'] = StockMovement::query()
+                    ->where('reference_type', MaterialUsage::class)
+                    ->where('reference_id', $existingUsage->id)
+                    ->get()
+                    ->toArray();
+            }
             $attributes = [
                 'usage_date' => $date,
                 'laboratory_id' => $data['laboratory_id'],
                 'purpose' => $data['purpose'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'status' => $data['status'] ?? MaterialUsageStatus::Submitted->value,
+                'void_reason' => null,
+                'voided_by' => null,
+                'voided_at' => null,
             ];
-            if ($draft !== null) {
-                $draft->update($attributes + ['updated_by' => $actor->id]);
-                $draft->items()->delete();
-                $usage = $draft;
+            if ($existingUsage !== null) {
+                if ($existingUsage->status === MaterialUsageStatus::Voided) {
+                    StockMovement::query()
+                        ->where('reference_type', MaterialUsage::class)
+                        ->where('reference_id', $existingUsage->id)
+                        ->delete();
+                }
+                $existingUsage->update($attributes + ['updated_by' => $actor->id]);
+                $existingUsage->items()->delete();
+                $usage = $existingUsage;
             } else {
                 $usage = MaterialUsage::create($attributes + [
                     'number' => $this->numberGenerator->handle($date),
@@ -79,7 +95,7 @@ class CreateMaterialUsageAction
                 }
             }
 
-            $this->audit->record($draft ? 'update' : 'create', $usage, $before, $usage->fresh()->load('items')->toArray(), request());
+            $this->audit->record($existingUsage ? 'update' : 'create', $usage, $before, $usage->fresh()->load('items')->toArray(), request());
 
             return $usage->load(['items.item', 'items.unit', 'laboratory', 'creator']);
         }, 3);

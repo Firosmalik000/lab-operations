@@ -23,12 +23,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('material-usages/items', [MaterialUsageController::class, 'items'])->name('material-usages.items');
     Route::get('material-usages', [MaterialUsageController::class, 'index'])->middleware('can:material-usage.view')->name('material-usages.index');
     Route::get('material-usages/create', [MaterialUsageController::class, 'create'])->middleware('can:material-usage.create')->name('material-usages.create');
-    Route::post('material-usages', [MaterialUsageController::class, 'store'])->name('material-usages.store');
+    Route::post('material-usages', [MaterialUsageController::class, 'store'])->middleware('can:material-usage.create')->name('material-usages.store');
     Route::get('material-usages/{materialUsage}/edit', [MaterialUsageController::class, 'edit'])->middleware('can:material-usage.update')->name('material-usages.edit');
-    Route::put('material-usages/{materialUsage}', [MaterialUsageController::class, 'update'])->name('material-usages.update');
+    Route::put('material-usages/{materialUsage}', [MaterialUsageController::class, 'update'])->middleware('can:material-usage.update')->name('material-usages.update');
     Route::get('material-usages/{materialUsage}', [MaterialUsageController::class, 'show'])->middleware('can:material-usage.view')->name('material-usages.show');
-    Route::post('material-usages/{materialUsage}/void', [MaterialUsageController::class, 'void'])->name('material-usages.void');
-    Route::delete('material-usages/{materialUsage}', [MaterialUsageController::class, 'destroy'])->name('material-usages.destroy');
+    Route::post('material-usages/{materialUsage}/void', [MaterialUsageController::class, 'void'])->middleware('can:material-usage.void')->name('material-usages.void');
+    Route::delete('material-usages/{materialUsage}', [MaterialUsageController::class, 'destroy'])->middleware('can:material-usage.delete')->name('material-usages.destroy');
 
     Route::get('inventory/stock', [InventoryController::class, 'stock'])->middleware('can:inventory.view')->name('inventory.stock');
     Route::get('inventory/movements', [InventoryController::class, 'movements'])->middleware('can:inventory.view')->name('inventory.movements');
