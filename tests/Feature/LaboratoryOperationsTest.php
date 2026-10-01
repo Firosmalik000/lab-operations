@@ -133,6 +133,108 @@ class LaboratoryOperationsTest extends TestCase
         $this->assertSame(10.0, (float) StockMovement::sum('quantity'));
     }
 
+    public function test_inventory_admin_can_edit_and_delete_manual_stock_movements(): void
+    {
+        $item = $this->item('MOVEMENT-CRUD', InventoryMode::Stock);
+        $inventoryAdmin = User::factory()->create();
+        $inventoryAdmin->roles()->attach(Role::where('name', 'inventory-admin')->firstOrFail());
+        $inventoryAdmin->laboratories()->attach($this->laboratory);
+        $payload = [
+            'type' => 'RECEIVING',
+            'item_id' => $item->id,
+            'laboratory_id' => $this->laboratory->id,
+            'unit_id' => $this->unit->id,
+            'quantity' => 10,
+            'notes' => 'Penerimaan awal',
+        ];
+
+        $this->actingAs($inventoryAdmin)->post('/inventory/movements', $payload)->assertRedirect();
+        $movement = StockMovement::firstOrFail();
+
+        $this->get('/inventory/movements')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('can.create', true)
+                ->where('can.update', true)
+                ->where('can.delete', true));
+        $this->get("/inventory/movements/{$movement->id}/edit")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('inventory/create')
+                ->where('movement.id', $movement->id));
+
+        $this->put("/inventory/movements/{$movement->id}", [...$payload, 'quantity' => 6, 'notes' => 'Jumlah dikoreksi'])
+            ->assertRedirect('/inventory/movements');
+        $this->assertDatabaseHas('stock_movements', ['id' => $movement->id, 'quantity' => 6, 'notes' => 'Jumlah dikoreksi']);
+        $this->assertDatabaseHas('audit_logs', ['entity_type' => 'StockMovement', 'entity_id' => (string) $movement->id, 'action' => 'update']);
+
+        $this->delete("/inventory/movements/{$movement->id}")->assertSessionHas('success');
+        $this->assertDatabaseMissing('stock_movements', ['id' => $movement->id]);
+        $this->assertDatabaseHas('audit_logs', ['entity_type' => 'StockMovement', 'entity_id' => (string) $movement->id, 'action' => 'delete']);
+    }
+
+    public function test_automatic_stock_movements_cannot_be_edited_or_deleted_from_inventory(): void
+    {
+        $item = $this->item('MOVEMENT-AUTO', InventoryMode::Stock);
+        $inventoryAdmin = User::factory()->create();
+        $inventoryAdmin->roles()->attach(Role::where('name', 'inventory-admin')->firstOrFail());
+        $inventoryAdmin->laboratories()->attach($this->laboratory);
+
+        $this->actingAs($this->staff)->post('/material-usages', $this->payload([$item], '4'))->assertRedirect();
+        $movement = StockMovement::where('type', 'USAGE')->firstOrFail();
+
+        $this->actingAs($inventoryAdmin)->get("/inventory/movements/{$movement->id}/edit")->assertStatus(409);
+        $this->delete("/inventory/movements/{$movement->id}")->assertStatus(409);
+        $this->assertDatabaseHas('stock_movements', ['id' => $movement->id]);
+    }
+
+    public function test_inventory_view_permission_does_not_allow_movement_changes(): void
+    {
+        $viewer = User::factory()->create();
+        $viewer->roles()->attach(Role::where('name', 'qa-qc')->firstOrFail());
+        $viewer->laboratories()->attach($this->laboratory);
+        $movement = StockMovement::create([
+            'item_id' => $this->item('MOVEMENT-VIEW-ONLY', InventoryMode::Stock)->id,
+            'laboratory_id' => $this->laboratory->id,
+            'type' => 'RECEIVING',
+            'quantity' => 2,
+            'unit_id' => $this->unit->id,
+            'created_by' => $this->staff->id,
+        ]);
+
+        $this->actingAs($viewer)->get('/inventory/movements')->assertOk();
+        $this->get("/inventory/movements/{$movement->id}/edit")->assertForbidden();
+        $this->delete("/inventory/movements/{$movement->id}")->assertForbidden();
+        $this->assertDatabaseHas('stock_movements', ['id' => $movement->id]);
+    }
+
+    public function test_inventory_management_permission_migration_backfills_existing_roles(): void
+    {
+        $permissionIds = Permission::whereIn('name', ['inventory.update', 'inventory.delete'])->pluck('id');
+        Role::whereIn('name', ['super-admin', 'lab-admin', 'inventory-admin', 'supervisor'])
+            ->get()
+            ->each(fn (Role $role) => $role->permissions()->detach($permissionIds));
+
+        $migration = require database_path('migrations/2026_10_01_000001_add_inventory_movement_management_permissions.php');
+        $migration->up();
+
+        foreach (['super-admin', 'lab-admin', 'inventory-admin'] as $roleName) {
+            $this->assertSame(
+                ['inventory.delete', 'inventory.update'],
+                Role::where('name', $roleName)->firstOrFail()->permissions()
+                    ->whereIn('name', ['inventory.update', 'inventory.delete'])
+                    ->orderBy('name')
+                    ->pluck('name')
+                    ->all(),
+            );
+        }
+        $this->assertFalse(
+            Role::where('name', 'supervisor')->firstOrFail()->permissions()
+                ->whereIn('name', ['inventory.update', 'inventory.delete'])
+                ->exists(),
+        );
+    }
+
     public function test_stock_movements_reject_a_non_default_unit(): void
     {
         $item = $this->item('STOCK-UNIT', InventoryMode::Stock);

@@ -34,6 +34,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('inventory/movements', [InventoryController::class, 'movements'])->middleware('can:inventory.view')->name('inventory.movements');
     Route::get('inventory/create', [InventoryController::class, 'create'])->middleware('can:inventory.view')->name('inventory.create');
     Route::post('inventory/movements', [InventoryController::class, 'store'])->name('inventory.store');
+    Route::get('inventory/movements/{stockMovement}/edit', [InventoryController::class, 'edit'])->middleware('can:inventory.update')->name('inventory.edit');
+    Route::put('inventory/movements/{stockMovement}', [InventoryController::class, 'update'])->middleware('can:inventory.update')->name('inventory.update');
+    Route::delete('inventory/movements/{stockMovement}', [InventoryController::class, 'destroy'])->middleware('can:inventory.delete')->name('inventory.destroy');
 
     Route::get('master/items', [ItemController::class, 'index'])->middleware('can:items.view')->name('items.index');
     Route::post('master/items', [ItemController::class, 'store'])->name('items.store');

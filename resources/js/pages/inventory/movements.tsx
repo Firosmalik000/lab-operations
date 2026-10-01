@@ -1,5 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, RotateCcw } from 'lucide-react';
+import { Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { PageHeading } from '@/components/page-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,16 +42,24 @@ const types = [
     'ADJUSTMENT_OUT',
     'REVERSAL',
 ];
+const manualTypes = ['OPENING', 'RECEIVING', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT'];
 
 export default function Movements({
     movements,
     filters,
     laboratories,
+    can,
 }: {
     movements: Page<Movement>;
     filters: Record<string, string>;
     laboratories: { id: number; name: string }[];
+    can: { create: boolean; update: boolean; delete: boolean };
 }) {
+    const [deletingMovement, setDeletingMovement] = useState<Movement | null>(
+        null,
+    );
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const apply = (data: Record<string, string>) =>
         router.get(
             '/inventory/movements',
@@ -58,6 +68,18 @@ export default function Movements({
         );
 
     const hasFilters = Boolean(filters.laboratory_id || filters.type);
+    const isManual = (movement: Movement) =>
+        movement.reference_type === null && manualTypes.includes(movement.type);
+
+    const confirmDelete = () => {
+        if (!deletingMovement) return;
+        setIsDeleting(true);
+        router.delete(`/inventory/movements/${deletingMovement.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeletingMovement(null),
+            onFinish: () => setIsDeleting(false),
+        });
+    };
 
     const getTypeBadgeVariant = (type: string) => {
         if (['RECEIVING', 'OPENING', 'ADJUSTMENT_IN'].includes(type))
@@ -142,6 +164,40 @@ export default function Movements({
                 </p>
             ),
         },
+        {
+            header: <span className="sr-only">Aksi</span>,
+            className: 'text-right whitespace-nowrap',
+            cell: (movement) => (
+                <div className="flex items-center justify-end gap-1">
+                    {isManual(movement) && can.update && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-muted-foreground hover:text-foreground"
+                            asChild
+                            title="Edit Mutasi"
+                        >
+                            <Link
+                                href={`/inventory/movements/${movement.id}/edit`}
+                            >
+                                <Pencil className="size-3.5" />
+                            </Link>
+                        </Button>
+                    )}
+                    {isManual(movement) && can.delete && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeletingMovement(movement)}
+                            title="Hapus Mutasi"
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    )}
+                </div>
+            ),
+        },
     ];
 
     return (
@@ -151,12 +207,14 @@ export default function Movements({
                 <PageHeading
                     title="Pergerakan Stok"
                     actions={
-                        <Button asChild size="sm" className="gap-1.5">
-                            <Link href="/inventory/create?type=RECEIVING">
-                                <Plus className="size-4" />
-                                Catat Pergerakan
-                            </Link>
-                        </Button>
+                        can.create && (
+                            <Button asChild size="sm" className="gap-1.5">
+                                <Link href="/inventory/create?type=RECEIVING">
+                                    <Plus className="size-4" />
+                                    Catat Pergerakan
+                                </Link>
+                            </Button>
+                        )
                     }
                 />
 
@@ -226,6 +284,20 @@ export default function Movements({
                     paginationLinks={movements.links}
                     emptyTitle="Belum ada pergerakan stok"
                     emptyDescription="Ubah filter pencarian atau catat pergerakan baru."
+                />
+
+                <ConfirmDeleteDialog
+                    open={Boolean(deletingMovement)}
+                    onOpenChange={(open) => !open && setDeletingMovement(null)}
+                    itemName={
+                        deletingMovement
+                            ? `${deletingMovement.type} — ${deletingMovement.item.name}`
+                            : undefined
+                    }
+                    title="Hapus Pergerakan Stok"
+                    description="Pergerakan stok ini akan dihapus permanen dan saldo stok akan dihitung ulang secara otomatis."
+                    loading={isDeleting}
+                    onConfirm={confirmDelete}
                 />
             </div>
         </>

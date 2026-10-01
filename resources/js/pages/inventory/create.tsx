@@ -22,6 +22,15 @@ type Item = {
 };
 type Lab = { id: number; name: string };
 type Location = { id: number; laboratory_id: number | null; name: string };
+type Movement = {
+    id: number;
+    laboratory_id: number;
+    item_id: number;
+    storage_location_id: number | null;
+    quantity: string;
+    unit_id: number;
+    notes: string | null;
+};
 const labels: Record<string, string> = {
     OPENING: 'Stok Awal',
     RECEIVING: 'Penerimaan',
@@ -34,38 +43,45 @@ export default function InventoryCreate({
     items,
     units,
     locations,
+    movement,
 }: {
     type: string;
     laboratories: Lab[];
     items: Item[];
     units: Unit[];
     locations: Location[];
+    movement?: Movement;
 }) {
     const form = useForm({
         type,
-        laboratory_id:
-            laboratories.length === 1
-                ? laboratories[0].id
-                : (null as number | null),
-        item_id: null as number | null,
-        storage_location_id: null as number | null,
-        quantity: '',
-        unit_id: null as number | null,
-        notes: '',
+        laboratory_id: movement
+            ? movement.laboratory_id
+            : laboratories.length === 1
+              ? laboratories[0].id
+              : (null as number | null),
+        item_id: movement?.item_id ?? (null as number | null),
+        storage_location_id:
+            movement?.storage_location_id ?? (null as number | null),
+        quantity: movement ? String(Math.abs(Number(movement.quantity))) : '',
+        unit_id: movement?.unit_id ?? (null as number | null),
+        notes: movement?.notes ?? '',
     });
     const errors = form.errors as Record<string, string>;
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        form.post('/inventory/movements');
+        if (movement) form.put(`/inventory/movements/${movement.id}`);
+        else form.post('/inventory/movements');
     };
     return (
         <>
-            <Head title={labels[type]} />
+            <Head title={movement ? `Edit ${labels[type]}` : labels[type]} />
             <form
                 onSubmit={submit}
                 className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 sm:p-6 lg:p-8"
             >
-                <PageHeading title={labels[type]} />
+                <PageHeading
+                    title={movement ? `Edit ${labels[type]}` : labels[type]}
+                />
                 <Card>
                     <CardHeader>
                         <CardTitle>Detail Pergerakan</CardTitle>
@@ -108,6 +124,11 @@ export default function InventoryCreate({
                         <div className="grid gap-2">
                             <Label>Item STOCK</Label>
                             <Select
+                                value={
+                                    form.data.item_id
+                                        ? String(form.data.item_id)
+                                        : ''
+                                }
                                 onValueChange={(v) => {
                                     const item = items.find(
                                         (entry) => entry.id === Number(v),
@@ -263,7 +284,9 @@ export default function InventoryCreate({
                     <Button type="submit" disabled={form.processing}>
                         {form.processing
                             ? 'Menyimpan…'
-                            : `Simpan ${labels[type]}`}
+                            : movement
+                              ? 'Simpan Perubahan'
+                              : `Simpan ${labels[type]}`}
                     </Button>
                 </div>
             </form>

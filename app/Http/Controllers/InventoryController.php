@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Inventory\CreateStockMovementAction;
+use App\Actions\Inventory\UpdateStockMovementAction;
 use App\Http\Requests\InventoryMovementRequest;
+use App\Http\Requests\UpdateInventoryMovementRequest;
 use App\Models\Item;
 use App\Models\Laboratory;
 use App\Models\StockMovement;
 use App\Models\StorageLocation;
 use App\Models\Unit;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +20,9 @@ use Inertia\Response;
 
 class InventoryController extends Controller
 {
+    /** @var list<string> */
+    private const MANUAL_MOVEMENT_TYPES = ['OPENING', 'RECEIVING', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT'];
+
     public function stock(Request $request): Response
     {
         $laboratoryIds = $this->laboratoryIds($request);
@@ -61,13 +67,18 @@ class InventoryController extends Controller
             'movements' => $query->latest('created_at')->paginate(20)->withQueryString(),
             'filters' => $request->only(['type', 'laboratory_id']),
             'laboratories' => Laboratory::whereIn('id', $this->laboratoryIds($request))->orderBy('name')->get(['id', 'name']),
+            'can' => [
+                'create' => $request->user()->canAny(['inventory.opening', 'inventory.receive', 'inventory.adjust']),
+                'update' => $request->user()->can('inventory.update'),
+                'delete' => $request->user()->can('inventory.delete'),
+            ],
         ]);
     }
 
     public function create(Request $request): Response
     {
         $type = $request->string('type', 'RECEIVING')->value();
-        abort_unless(in_array($type, ['OPENING', 'RECEIVING', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT'], true), 404);
+        abort_unless(in_array($type, self::MANUAL_MOVEMENT_TYPES, true), 404);
         $permission = match ($type) {
             'OPENING' => 'inventory.opening',
             'RECEIVING' => 'inventory.receive',
@@ -77,12 +88,7 @@ class InventoryController extends Controller
 
         return Inertia::render('inventory/create', [
             'type' => $type,
-            'laboratories' => Laboratory::whereIn('id', $this->laboratoryIds($request))->where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'items' => Item::query()->active()->where('inventory_mode', 'STOCK')
-                ->whereHas('laboratories', fn ($query) => $query->whereIn('laboratories.id', $this->laboratoryIds($request)))
-                ->with(['defaultUnit:id,name,symbol', 'laboratories:id'])->orderBy('name')->get(['id', 'code', 'name', 'default_unit_id']),
-            'units' => Unit::where('is_active', true)->orderBy('name')->get(['id', 'name', 'symbol']),
-            'locations' => StorageLocation::where('is_active', true)->orderBy('name')->get(['id', 'laboratory_id', 'name']),
+            ...$this->formOptions($request),
         ]);
     }
 
@@ -91,6 +97,59 @@ class InventoryController extends Controller
         $action->handle($request->validated(), $request->user());
 
         return to_route('inventory.movements')->with('success', 'Pergerakan stok berhasil dicatat.');
+    }
+
+    public function edit(Request $request, StockMovement $stockMovement): Response
+    {
+        $this->assertManualMovementAccess($request, $stockMovement);
+
+        return Inertia::render('inventory/create', [
+            'type' => $stockMovement->type->value,
+            'movement' => $stockMovement,
+            ...$this->formOptions($request),
+        ]);
+    }
+
+    public function update(UpdateInventoryMovementRequest $request, StockMovement $stockMovement, UpdateStockMovementAction $action): RedirectResponse
+    {
+        $this->assertManualMovementAccess($request, $stockMovement);
+        $action->handle($stockMovement, $request->validated());
+
+        return to_route('inventory.movements')->with('success', 'Pergerakan stok berhasil diperbarui.');
+    }
+
+    public function destroy(Request $request, StockMovement $stockMovement, AuditService $audit): RedirectResponse
+    {
+        $this->assertManualMovementAccess($request, $stockMovement);
+        $old = $stockMovement->toArray();
+
+        DB::transaction(function () use ($stockMovement, $audit, $request, $old): void {
+            $audit->record('delete', $stockMovement, $old, null, $request);
+            $stockMovement->delete();
+        });
+
+        return back()->with('success', 'Pergerakan stok berhasil dihapus.');
+    }
+
+    /** @return array<string, mixed> */
+    private function formOptions(Request $request): array
+    {
+        $laboratoryIds = $this->laboratoryIds($request);
+
+        return [
+            'laboratories' => Laboratory::whereIn('id', $laboratoryIds)->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'items' => Item::query()->active()->where('inventory_mode', 'STOCK')
+                ->whereHas('laboratories', fn ($query) => $query->whereIn('laboratories.id', $laboratoryIds))
+                ->with(['defaultUnit:id,name,symbol', 'laboratories:id'])->orderBy('name')->get(['id', 'code', 'name', 'default_unit_id']),
+            'units' => Unit::where('is_active', true)->orderBy('name')->get(['id', 'name', 'symbol']),
+            'locations' => StorageLocation::where('is_active', true)->orderBy('name')->get(['id', 'laboratory_id', 'name']),
+        ];
+    }
+
+    private function assertManualMovementAccess(Request $request, StockMovement $movement): void
+    {
+        abort_unless($request->user()->canAccessLaboratory($movement->laboratory_id), 403);
+        abort_if($movement->reference_type !== null || ! in_array($movement->type->value, self::MANUAL_MOVEMENT_TYPES, true), 409, 'Mutasi otomatis harus dikelola dari transaksi sumbernya.');
     }
 
     /** @return array<int, int> */
