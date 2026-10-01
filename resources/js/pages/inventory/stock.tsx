@@ -33,7 +33,6 @@ type Stock = {
     balance: string;
     symbol: string;
     minimum_stock: string | null;
-    editable_movement_id: number | null;
 };
 
 type Page<T> = {
@@ -79,16 +78,13 @@ export default function StockIndex({
     );
 
     const confirmDelete = () => {
-        if (!deletingStock?.editable_movement_id) return;
+        if (!deletingStock) return;
         setIsDeleting(true);
-        router.delete(
-            `/inventory/movements/${deletingStock.editable_movement_id}`,
-            {
-                preserveScroll: true,
-                onSuccess: () => setDeletingStock(null),
-                onFinish: () => setIsDeleting(false),
-            },
-        );
+        router.delete(`/master/items/${deletingStock.item_id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeletingStock(null),
+            onFinish: () => setIsDeleting(false),
+        });
     };
 
     const columns: Column<Stock>[] = [
@@ -153,41 +149,38 @@ export default function StockIndex({
         columns.push({
             header: <span className="sr-only">Aksi</span>,
             className: 'text-right whitespace-nowrap',
-            cell: (stock) =>
-                stock.editable_movement_id ? (
-                    <div className="flex items-center justify-end gap-1">
-                        {can.update && (
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="size-8 text-muted-foreground hover:text-foreground"
-                                asChild
-                                title="Edit Stok"
+            cell: (stock) => (
+                <div className="flex items-center justify-end gap-1">
+                    {can.update && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-muted-foreground hover:text-foreground"
+                            asChild
+                            title="Edit Stok"
+                        >
+                            <Link
+                                href={`/master/items?edit=${stock.item_id}&return_to=stock`}
                             >
-                                <Link
-                                    href={`/inventory/movements/${stock.editable_movement_id}/edit?return_to=stock`}
-                                >
-                                    <Pencil className="size-3.5" />
-                                    <span className="sr-only">Edit stok</span>
-                                </Link>
-                            </Button>
-                        )}
-                        {can.delete && (
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="size-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => setDeletingStock(stock)}
-                                title="Hapus Stok"
-                            >
-                                <Trash2 className="size-3.5" />
-                                <span className="sr-only">Hapus stok</span>
-                            </Button>
-                        )}
-                    </div>
-                ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                ),
+                                <Pencil className="size-3.5" />
+                                <span className="sr-only">Edit stok</span>
+                            </Link>
+                        </Button>
+                    )}
+                    {can.delete && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeletingStock(stock)}
+                            title="Hapus Stok"
+                        >
+                            <Trash2 className="size-3.5" />
+                            <span className="sr-only">Hapus stok</span>
+                        </Button>
+                    )}
+                </div>
+            ),
         });
     }
 
@@ -311,7 +304,7 @@ export default function StockIndex({
                             : undefined
                     }
                     title="Hapus Stok"
-                    description="Mutasi manual terbaru akan dihapus permanen dan saldo stok akan dihitung ulang secara otomatis."
+                    description="Item stok akan dihapus permanen. Item yang sudah memiliki riwayat mutasi atau penggunaan tidak dapat dihapus."
                     loading={isDeleting}
                     onConfirm={confirmDelete}
                 />

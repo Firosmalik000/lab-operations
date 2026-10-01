@@ -20,6 +20,15 @@ class ItemController extends Controller
 {
     public function index(Request $request): Response
     {
+        $editingItem = null;
+        if ($request->filled('edit')) {
+            abort_unless($request->user()->can('items.update'), 403);
+            $editingItem = Item::query()
+                ->with(['itemType:id,name', 'category:id,name', 'defaultUnit:id,name,symbol', 'laboratories:id,name'])
+                ->findOrFail($request->integer('edit'));
+            $this->assertItemScope($request, $editingItem);
+        }
+
         $query = Item::query()->with(['itemType:id,name', 'category:id,name', 'defaultUnit:id,name,symbol', 'laboratories:id,name']);
         if (! $request->user()->hasRole('super-admin')) {
             $query->whereHas('laboratories', fn ($builder) => $builder->whereIn('laboratories.id', $request->user()->laboratoryIds()));
@@ -39,6 +48,8 @@ class ItemController extends Controller
         return Inertia::render('master/items', [
             'items' => $query->orderBy($sort, $direction)->paginate(15)->withQueryString(),
             'filters' => $request->only(['search', 'item_type_id', 'category_id', 'inventory_mode', 'active', 'sort', 'direction']),
+            'editingItem' => $editingItem,
+            'returnTo' => $request->query('return_to') === 'stock' ? 'stock' : null,
             ...$this->options($request),
             'can' => [
                 'create' => $request->user()->can('items.create'),
@@ -72,14 +83,16 @@ class ItemController extends Controller
         $laboratoryIds = $data['laboratory_ids'];
         unset($data['laboratory_ids']);
         $this->assertLaboratoryScope($request, $laboratoryIds);
-        if (! $request->user()->hasRole('super-admin') && ! $item->laboratories()->whereIn('laboratories.id', $request->user()->laboratoryIds())->exists()) {
-            abort(403);
-        }
+        $this->assertItemScope($request, $item);
         DB::transaction(function () use ($item, $data, $laboratoryIds, $audit, $request, $old): void {
             $item->update($data + ['updated_by' => $request->user()->id]);
             $item->laboratories()->sync($laboratoryIds);
             $audit->record('update', $item, $old, $item->fresh()->toArray(), $request);
         });
+
+        if ($request->query('return_to') === 'stock') {
+            return to_route('inventory.stock')->with('success', 'Item berhasil diperbarui.');
+        }
 
         return back()->with('success', 'Item berhasil diperbarui.');
     }
@@ -87,9 +100,7 @@ class ItemController extends Controller
     public function destroy(Request $request, Item $item, AuditService $audit): RedirectResponse
     {
         abort_unless($request->user()->can('items.delete'), 403);
-        if (! $request->user()->hasRole('super-admin') && ! $item->laboratories()->whereIn('laboratories.id', $request->user()->laboratoryIds())->exists()) {
-            abort(403);
-        }
+        $this->assertItemScope($request, $item);
 
         if ($item->stockMovements()->exists() || $item->materialUsageItems()->exists()) {
             return back()->with('error', 'Item tidak dapat dihapus karena sudah memiliki riwayat mutasi stok atau penggunaan. Anda dapat menonaktifkannya.');
@@ -139,6 +150,13 @@ class ItemController extends Controller
     private function assertLaboratoryScope(Request $request, array $laboratoryIds): void
     {
         if (! $request->user()->hasRole('super-admin') && array_diff(array_map('intval', $laboratoryIds), $request->user()->laboratoryIds()) !== []) {
+            abort(403);
+        }
+    }
+
+    private function assertItemScope(Request $request, Item $item): void
+    {
+        if (! $request->user()->hasRole('super-admin') && ! $item->laboratories()->whereIn('laboratories.id', $request->user()->laboratoryIds())->exists()) {
             abort(403);
         }
     }

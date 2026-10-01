@@ -57,6 +57,8 @@ export default function Items({
     units,
     laboratories,
     can,
+    editingItem,
+    returnTo,
 }: {
     items: Page<Item>;
     filters: Record<string, string>;
@@ -65,23 +67,29 @@ export default function Items({
     units: Unit[];
     laboratories: Option[];
     can: { create: boolean; update: boolean; delete: boolean };
+    editingItem?: Item | null;
+    returnTo?: 'stock' | null;
 }) {
-    const [open, setOpen] = useState(false);
-    const [editing, setEditing] = useState<Item | null>(null);
+    const [open, setOpen] = useState(Boolean(editingItem));
+    const [editing, setEditing] = useState<Item | null>(editingItem ?? null);
     const [deletingItem, setDeletingItem] = useState<Item | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
     const form = useForm({
-        code: '',
-        name: '',
-        item_type_id: null as number | null,
-        category_id: null as number | null,
-        default_unit_id: null as number | null,
-        inventory_mode: 'NONE',
-        minimum_stock: '',
-        is_active: true,
-        notes: '',
-        laboratory_ids: [] as number[],
+        code: editingItem?.code ?? '',
+        name: editingItem?.name ?? '',
+        item_type_id: editingItem?.item_type_id ?? (null as number | null),
+        category_id: editingItem?.category_id ?? (null as number | null),
+        default_unit_id:
+            editingItem?.default_unit_id ?? (null as number | null),
+        inventory_mode: editingItem?.inventory_mode ?? 'NONE',
+        minimum_stock: editingItem?.minimum_stock
+            ? String(Number(editingItem.minimum_stock))
+            : '',
+        is_active: editingItem?.is_active ?? true,
+        notes: editingItem?.notes ?? '',
+        laboratory_ids:
+            editingItem?.laboratories.map((lab) => lab.id) ?? ([] as number[]),
     });
 
     const show = (item?: Item) => {
@@ -111,7 +119,11 @@ export default function Items({
             preserveScroll: true,
             onSuccess: () => setOpen(false),
         };
-        if (editing) form.put(`/master/items/${editing.id}`, options);
+        if (editing)
+            form.put(
+                `/master/items/${editing.id}${returnTo === 'stock' ? '?return_to=stock' : ''}`,
+                options,
+            );
         else form.post('/master/items', options);
     };
 
@@ -352,7 +364,16 @@ export default function Items({
                     emptyDescription="Ubah filter pencarian atau buat item baru."
                 />
 
-                <Dialog open={open} onOpenChange={setOpen}>
+                <Dialog
+                    open={open}
+                    onOpenChange={(value) => {
+                        if (!value && returnTo === 'stock') {
+                            router.visit('/inventory/stock');
+                            return;
+                        }
+                        setOpen(value);
+                    }}
+                >
                     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
                         <form onSubmit={submit}>
                             <DialogHeader>
