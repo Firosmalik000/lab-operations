@@ -26,6 +26,15 @@ class InventoryController extends Controller
     public function stock(Request $request): Response
     {
         $laboratoryIds = $this->laboratoryIds($request);
+        $latestManualMovement = StockMovement::query()
+            ->select('id')
+            ->whereColumn('stock_movements.item_id', 'items.id')
+            ->whereColumn('stock_movements.laboratory_id', 'laboratories.id')
+            ->whereNull('reference_type')
+            ->whereIn('type', self::MANUAL_MOVEMENT_TYPES)
+            ->latest('created_at')
+            ->latest('id')
+            ->limit(1);
         $query = DB::table('item_laboratory')
             ->join('items', 'items.id', '=', 'item_laboratory.item_id')
             ->join('laboratories', 'laboratories.id', '=', 'item_laboratory.laboratory_id')
@@ -39,6 +48,7 @@ class InventoryController extends Controller
             ->where('items.inventory_mode', 'STOCK')
             ->whereIn('laboratories.id', $laboratoryIds)
             ->selectRaw('items.id as item_id, items.code, items.name, items.minimum_stock, item_categories.name as category, laboratories.id as laboratory_id, laboratories.name as laboratory, units.id as unit_id, units.symbol, COALESCE(SUM(stock_movements.quantity), 0) as balance')
+            ->addSelect(['editable_movement_id' => $latestManualMovement])
             ->groupBy('items.id', 'items.code', 'items.name', 'items.minimum_stock', 'item_categories.name', 'laboratories.id', 'laboratories.name', 'units.id', 'units.symbol');
 
         $query->when($request->filled('laboratory_id'), fn ($q) => $q->where('laboratories.id', $request->integer('laboratory_id')));
@@ -53,6 +63,10 @@ class InventoryController extends Controller
             'stocks' => $query->orderBy('items.name')->paginate(20)->withQueryString(),
             'laboratories' => Laboratory::whereIn('id', $laboratoryIds)->orderBy('name')->get(['id', 'name']),
             'filters' => $request->only(['search', 'laboratory_id', 'status']),
+            'can' => [
+                'update' => $request->user()->can('inventory.update'),
+                'delete' => $request->user()->can('inventory.delete'),
+            ],
         ]);
     }
 
@@ -106,6 +120,7 @@ class InventoryController extends Controller
         return Inertia::render('inventory/create', [
             'type' => $stockMovement->type->value,
             'movement' => $stockMovement,
+            'returnTo' => $request->query('return_to') === 'stock' ? 'stock' : null,
             ...$this->formOptions($request),
         ]);
     }
@@ -115,7 +130,9 @@ class InventoryController extends Controller
         $this->assertManualMovementAccess($request, $stockMovement);
         $action->handle($stockMovement, $request->validated());
 
-        return to_route('inventory.movements')->with('success', 'Pergerakan stok berhasil diperbarui.');
+        $route = $request->query('return_to') === 'stock' ? 'inventory.stock' : 'inventory.movements';
+
+        return to_route($route)->with('success', 'Pergerakan stok berhasil diperbarui.');
     }
 
     public function destroy(Request $request, StockMovement $stockMovement, AuditService $audit): RedirectResponse

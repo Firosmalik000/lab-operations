@@ -44,6 +44,7 @@ export default function InventoryCreate({
     units,
     locations,
     movement,
+    returnTo,
 }: {
     type: string;
     laboratories: Lab[];
@@ -51,6 +52,7 @@ export default function InventoryCreate({
     units: Unit[];
     locations: Location[];
     movement?: Movement;
+    returnTo?: 'stock' | null;
 }) {
     const form = useForm({
         type,
@@ -69,7 +71,10 @@ export default function InventoryCreate({
     const errors = form.errors as Record<string, string>;
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (movement) form.put(`/inventory/movements/${movement.id}`);
+        if (movement)
+            form.put(
+                `/inventory/movements/${movement.id}${returnTo === 'stock' ? '?return_to=stock' : ''}`,
+            );
         else form.post('/inventory/movements');
     };
     return (

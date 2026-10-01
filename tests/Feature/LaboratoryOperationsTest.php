@@ -173,6 +173,54 @@ class LaboratoryOperationsTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['entity_type' => 'StockMovement', 'entity_id' => (string) $movement->id, 'action' => 'delete']);
     }
 
+    public function test_current_stock_exposes_latest_manual_movement_actions(): void
+    {
+        $item = $this->item('STOCK-ACTIONS', InventoryMode::Stock);
+        $inventoryAdmin = User::factory()->create();
+        $inventoryAdmin->roles()->attach(Role::where('name', 'inventory-admin')->firstOrFail());
+        $inventoryAdmin->laboratories()->attach($this->laboratory);
+
+        $olderMovement = StockMovement::create([
+            'item_id' => $item->id,
+            'laboratory_id' => $this->laboratory->id,
+            'type' => 'OPENING',
+            'quantity' => 5,
+            'unit_id' => $this->unit->id,
+            'created_by' => $inventoryAdmin->id,
+            'created_at' => now()->subMinute(),
+        ]);
+        $latestMovement = StockMovement::create([
+            'item_id' => $item->id,
+            'laboratory_id' => $this->laboratory->id,
+            'type' => 'RECEIVING',
+            'quantity' => 3,
+            'unit_id' => $this->unit->id,
+            'created_by' => $inventoryAdmin->id,
+        ]);
+
+        $this->actingAs($inventoryAdmin)->get('/inventory/stock')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('can.update', true)
+                ->where('can.delete', true)
+                ->where('stocks.data.0.item_id', $item->id)
+                ->where('stocks.data.0.editable_movement_id', $latestMovement->id));
+
+        $this->get("/inventory/movements/{$olderMovement->id}/edit?return_to=stock")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('returnTo', 'stock'));
+
+        $payload = [
+            'type' => 'OPENING',
+            'item_id' => $item->id,
+            'laboratory_id' => $this->laboratory->id,
+            'unit_id' => $this->unit->id,
+            'quantity' => 7,
+        ];
+        $this->put("/inventory/movements/{$olderMovement->id}?return_to=stock", $payload)
+            ->assertRedirect('/inventory/stock');
+    }
+
     public function test_automatic_stock_movements_cannot_be_edited_or_deleted_from_inventory(): void
     {
         $item = $this->item('MOVEMENT-AUTO', InventoryMode::Stock);

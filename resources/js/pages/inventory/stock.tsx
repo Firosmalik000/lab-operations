@@ -1,11 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowDownToLine,
+    Pencil,
     RotateCcw,
     Search,
     SlidersHorizontal,
+    Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { PageHeading } from '@/components/page-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +25,7 @@ import {
 
 type Stock = {
     item_id: number;
+    laboratory_id: number;
     code: string;
     name: string;
     category: string | null;
@@ -29,6 +33,7 @@ type Stock = {
     balance: string;
     symbol: string;
     minimum_stock: string | null;
+    editable_movement_id: number | null;
 };
 
 type Page<T> = {
@@ -51,12 +56,16 @@ export default function StockIndex({
     stocks,
     filters,
     laboratories,
+    can,
 }: {
     stocks: Page<Stock>;
     filters: Record<string, string>;
     laboratories: { id: number; name: string }[];
+    can: { update: boolean; delete: boolean };
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const [deletingStock, setDeletingStock] = useState<Stock | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const apply = (data: Record<string, string>) =>
         router.get(
@@ -68,6 +77,19 @@ export default function StockIndex({
     const hasFilters = Boolean(
         filters.search || filters.laboratory_id || filters.status,
     );
+
+    const confirmDelete = () => {
+        if (!deletingStock?.editable_movement_id) return;
+        setIsDeleting(true);
+        router.delete(
+            `/inventory/movements/${deletingStock.editable_movement_id}`,
+            {
+                preserveScroll: true,
+                onSuccess: () => setDeletingStock(null),
+                onFinish: () => setIsDeleting(false),
+            },
+        );
+    };
 
     const columns: Column<Stock>[] = [
         {
@@ -126,6 +148,48 @@ export default function StockIndex({
             },
         },
     ];
+
+    if (can.update || can.delete) {
+        columns.push({
+            header: <span className="sr-only">Aksi</span>,
+            className: 'text-right whitespace-nowrap',
+            cell: (stock) =>
+                stock.editable_movement_id ? (
+                    <div className="flex items-center justify-end gap-1">
+                        {can.update && (
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-muted-foreground hover:text-foreground"
+                                asChild
+                                title="Edit Stok"
+                            >
+                                <Link
+                                    href={`/inventory/movements/${stock.editable_movement_id}/edit?return_to=stock`}
+                                >
+                                    <Pencil className="size-3.5" />
+                                    <span className="sr-only">Edit stok</span>
+                                </Link>
+                            </Button>
+                        )}
+                        {can.delete && (
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-muted-foreground hover:text-destructive"
+                                onClick={() => setDeletingStock(stock)}
+                                title="Hapus Stok"
+                            >
+                                <Trash2 className="size-3.5" />
+                                <span className="sr-only">Hapus stok</span>
+                            </Button>
+                        )}
+                    </div>
+                ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                ),
+        });
+    }
 
     return (
         <>
@@ -231,11 +295,25 @@ export default function StockIndex({
                     data={stocks.data}
                     columns={columns}
                     keyExtractor={(stock) =>
-                        `${stock.item_id}-${stock.laboratory}`
+                        `${stock.item_id}-${stock.laboratory_id}`
                     }
                     paginationLinks={stocks.links}
                     emptyTitle="Tidak ada data stok"
                     emptyDescription="Ubah filter pencarian atau catat penerimaan stok baru."
+                />
+
+                <ConfirmDeleteDialog
+                    open={Boolean(deletingStock)}
+                    onOpenChange={(open) => !open && setDeletingStock(null)}
+                    itemName={
+                        deletingStock
+                            ? `${deletingStock.name} di ${deletingStock.laboratory}`
+                            : undefined
+                    }
+                    title="Hapus Stok"
+                    description="Mutasi manual terbaru akan dihapus permanen dan saldo stok akan dihitung ulang secara otomatis."
+                    loading={isDeleting}
+                    onConfirm={confirmDelete}
                 />
             </div>
         </>
