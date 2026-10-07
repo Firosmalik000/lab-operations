@@ -258,31 +258,41 @@ export function MonthlyMatrixView({
                 </CardContent>
             </Card>
 
-            {/* Document Header Template (Mirip Header Excel) */}
-            <div className="rounded-xl border bg-card p-4 text-center shadow-xs">
-                <h3 className="text-base font-bold tracking-wide uppercase text-foreground">
-                    {matrix.category_group === 'alat'
-                        ? 'STOCK OPNAME & REKAP PEMAKAIAN ALAT'
-                        : 'STOCK OPNAME & REKAP PEMAKAIAN BAHAN KIMIA'}
-                </h3>
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
-                    <div>
-                        <span className="font-medium text-foreground">
-                            Lokasi:{' '}
-                        </span>
-                        {matrix.laboratory.name}
+            {/* Document Header Template (Mirip Persis Format Dokumen Excel) */}
+            <div className="rounded-xl border bg-card p-5 shadow-xs">
+                <div className="border-b pb-3 text-center">
+                    <h2 className="text-base font-bold tracking-wider uppercase text-foreground">
+                        {matrix.category_group === 'alat'
+                            ? 'STOCK OPNAME ALAT & CONSUMABLE'
+                            : 'STOCK OPNAME BAHAN KIMIA'}
+                    </h2>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-12">
+                    <div className="lg:col-span-6 space-y-1.5">
+                        <div className="flex items-center">
+                            <span className="w-28 text-muted-foreground font-medium">Lokasi</span>
+                            <span className="font-semibold text-foreground">: {matrix.laboratory.name}</span>
+                        </div>
+                        <div className="flex items-center">
+                            <span className="w-28 text-muted-foreground font-medium">Tanggal S.O</span>
+                            <span className="font-semibold text-foreground">: {matrix.period.days_in_month} {matrix.period.month_name} {matrix.period.year}</span>
+                        </div>
                     </div>
-                    <div>
-                        <span className="font-medium text-foreground">
-                            Periode:{' '}
-                        </span>
-                        {matrix.period.month_name} {matrix.period.year}
-                    </div>
-                    <div>
-                        <span className="font-medium text-foreground">
-                            Total Item:{' '}
-                        </span>
-                        {matrix.summary.total_items}
+                    <div className="lg:col-span-6 space-y-1.5">
+                        <div className="flex flex-wrap items-center justify-between sm:justify-start sm:gap-4">
+                            <div className="flex items-center">
+                                <span className="w-28 text-muted-foreground font-medium">Nama Petugas</span>
+                                <span className="font-semibold text-foreground">: {matrix.officer_name}</span>
+                            </div>
+                            <span className="text-muted-foreground text-[11px]">(Jabatan/Paraf: Analis)</span>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between sm:justify-start sm:gap-4">
+                            <div className="flex items-center">
+                                <span className="w-28 text-muted-foreground font-medium">Disetujui Oleh</span>
+                                <span className="font-semibold text-foreground">: Penyelia Lab</span>
+                            </div>
+                            <span className="text-muted-foreground text-[11px]">(Jabatan/Paraf: Penyelia {matrix.laboratory.name})</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -291,19 +301,19 @@ export function MonthlyMatrixView({
             <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                 <div className="overflow-x-auto max-h-[640px]">
                     <table className="w-full border-collapse text-left text-xs">
-                        <thead className="sticky top-0 z-20 bg-muted/90 backdrop-blur-xs text-foreground font-semibold">
+                        <thead className="sticky top-0 z-20 bg-muted/95 backdrop-blur-xs text-foreground font-semibold">
                             <tr className="border-b">
                                 <th
                                     rowSpan={2}
                                     className="w-10 border-r px-2.5 py-2 text-center"
                                 >
-                                    No
+                                    No.
                                 </th>
                                 <th
                                     rowSpan={2}
                                     className="min-w-[110px] border-r px-3 py-2"
                                 >
-                                    CAS / Catalog
+                                    CAS / Catalog No.
                                 </th>
                                 <th
                                     rowSpan={2}
@@ -313,13 +323,19 @@ export function MonthlyMatrixView({
                                 </th>
                                 <th
                                     rowSpan={2}
+                                    className="min-w-[100px] border-r px-2.5 py-2 text-center"
+                                >
+                                    Bentuk
+                                </th>
+                                <th
+                                    rowSpan={2}
                                     className="w-14 border-r px-2 py-2 text-center"
                                 >
                                     Satuan
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="w-20 border-r bg-amber-500/10 px-2 py-2 text-right"
+                                    className="w-20 border-r bg-amber-500/15 px-2 py-2 text-right font-bold"
                                 >
                                     Total Masuk
                                 </th>
@@ -331,7 +347,7 @@ export function MonthlyMatrixView({
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="w-20 border-r bg-amber-500/15 px-2 py-2 text-right font-bold"
+                                    className="w-20 border-r bg-amber-500/20 px-2 py-2 text-right font-bold"
                                 >
                                     Total Keluar
                                 </th>
@@ -410,10 +426,13 @@ export function MonthlyMatrixView({
                                                     </span>
                                                 )}
                                             </td>
+                                            <td className="border-r px-2 py-1.5 text-center text-muted-foreground whitespace-nowrap">
+                                                {row.category}
+                                            </td>
                                             <td className="border-r px-2 py-1.5 text-center text-muted-foreground">
                                                 {row.unit}
                                             </td>
-                                            <td className="border-r bg-amber-500/5 px-2 py-1.5 text-right font-medium tabular-nums">
+                                            <td className="border-r bg-amber-500/10 px-2 py-1.5 text-right font-semibold tabular-nums">
                                                 {row.total_masuk || '—'}
                                             </td>
 

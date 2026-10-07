@@ -204,12 +204,13 @@ class MonthlyUsageMatrixService
             // Document Header block (matching Excel example)
             fputcsv($handle, [$title]);
             fputcsv($handle, ['Lokasi', ': ' . $matrix['laboratory']['name']]);
-            fputcsv($handle, ['Periode', ': ' . $matrix['period']['month_name'] . ' ' . $matrix['period']['year']]);
-            fputcsv($handle, ['Petugas / Analis', ': ' . $matrix['officer_name']]);
+            fputcsv($handle, ['Tanggal S.O', ': ' . $matrix['period']['days_in_month'] . ' ' . $matrix['period']['month_name'] . ' ' . $matrix['period']['year']]);
+            fputcsv($handle, ['Nama Petugas', ': ' . $matrix['officer_name'], '', 'Jabatan / Paraf', ': Analis']);
+            fputcsv($handle, ['Disetujui Oleh', ': Penyelia Lab', '', 'Jabatan / Paraf', ': Penyelia ' . $matrix['laboratory']['name']]);
             fputcsv($handle, []); // empty line
 
             // Column Header
-            $headers = ['No', 'Kode / CAS No', 'Nama Bahan / Item', 'Satuan', 'Total Masuk'];
+            $headers = ['No.', 'Kode', 'CAS / Catalog No.', 'Nama Bahan', 'Bentuk', 'Volume', 'Satuan', 'Total Masuk'];
             for ($d = 1; $d <= $daysInMonth; $d++) {
                 $headers[] = (string) $d;
             }
@@ -225,8 +226,11 @@ class MonthlyUsageMatrixService
             foreach ($matrix['rows'] as $row) {
                 $line = [
                     $row['no'],
-                    $row['code'],
+                    '', // Kode internal jika kosong
+                    $row['code'], // CAS / Catalog No
                     $row['name'],
+                    $row['category'], // Bentuk / Kategori
+                    $row['notes'] ?? '', // Volume / Notes
                     $row['unit'],
                     $row['total_masuk'],
                 ];
@@ -244,6 +248,9 @@ class MonthlyUsageMatrixService
 
                 fputcsv($handle, $line);
             }
+
+            fputcsv($handle, []);
+            fputcsv($handle, ['* Merah: Reagen Expired / Kadaluarsa', '', '* Kuning: Perhatian / Kritis']);
 
             fclose($handle);
         }, $filename, [
