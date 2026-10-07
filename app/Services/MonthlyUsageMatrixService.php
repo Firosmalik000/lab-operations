@@ -146,6 +146,8 @@ class MonthlyUsageMatrixService
 
         $monthName = Carbon::create($year, $month, 1)->locale('id')->translatedFormat('F');
 
+        $approver = $this->resolveApprover($laboratory);
+
         return [
             'laboratory' => [
                 'id' => $laboratory->id,
@@ -162,11 +164,85 @@ class MonthlyUsageMatrixService
             ],
             'category_group' => $categoryGroup,
             'officer_name' => $user->name,
+            'approver' => $approver,
             'rows' => $rows,
             'summary' => [
                 'total_items' => count($rows),
                 'total_keluar_all' => round($totalMonthlyOut, 2),
             ],
+        ];
+    }
+
+    /**
+     * Resolves the approver (Penyelia) for the laboratory following priority:
+     * 1. User with 'supervisor' role assigned to this laboratory
+     * 2. User with 'lab-admin' role assigned to this laboratory
+     * 3. User with 'super-admin' role other than 'admin@lab.test' (e.g. Aisyatul Faizah)
+     * 4. Fallback to any active super-admin or default label
+     *
+     * @return array{name: string, title: string}
+     */
+    public function resolveApprover(Laboratory $laboratory): array
+    {
+        $labTitle = 'Penyelia Lab. ' . $laboratory->name;
+
+        // 1. Supervisor in this lab
+        $supervisor = User::query()
+            ->whereHas('roles', fn ($q) => $q->where('name', 'supervisor'))
+            ->where(function ($q) use ($laboratory) {
+                $q->whereHas('laboratories', fn ($lab) => $lab->where('laboratories.id', $laboratory->id))
+                    ->orWhere('default_laboratory_id', $laboratory->id);
+            })
+            ->where('is_active', true)
+            ->first();
+
+        if ($supervisor) {
+            return [
+                'name' => $supervisor->name,
+                'title' => $labTitle,
+            ];
+        }
+
+        // 2. Lab Admin in this lab
+        $labAdmin = User::query()
+            ->whereHas('roles', fn ($q) => $q->where('name', 'lab-admin'))
+            ->where(function ($q) use ($laboratory) {
+                $q->whereHas('laboratories', fn ($lab) => $lab->where('laboratories.id', $laboratory->id))
+                    ->orWhere('default_laboratory_id', $laboratory->id);
+            })
+            ->where('is_active', true)
+            ->first();
+
+        if ($labAdmin) {
+            return [
+                'name' => $labAdmin->name,
+                'title' => $labTitle,
+            ];
+        }
+
+        // 3. Super Admin other than default 'admin@lab.test' (e.g. Aisyatul Faizah)
+        $customSuperAdmin = User::query()
+            ->whereHas('roles', fn ($q) => $q->where('name', 'super-admin'))
+            ->where('email', '!=', 'admin@lab.test')
+            ->where('is_active', true)
+            ->first();
+
+        if ($customSuperAdmin) {
+            return [
+                'name' => $customSuperAdmin->name,
+                'title' => $labTitle,
+            ];
+        }
+
+        // 4. Fallback
+        $fallback = User::query()
+            ->whereHas('roles', fn ($q) => $q->where('name', 'super-admin'))
+            ->where('is_active', true)
+            ->first();
+
+        return [
+            'name' => $fallback?->name ?? 'Aisyatul Faizah',
+            'title' => $labTitle,
         ];
     }
 
@@ -206,7 +282,7 @@ class MonthlyUsageMatrixService
             fputcsv($handle, ['Lokasi', ': ' . $matrix['laboratory']['name']]);
             fputcsv($handle, ['Tanggal S.O', ': ' . $matrix['period']['days_in_month'] . ' ' . $matrix['period']['month_name'] . ' ' . $matrix['period']['year']]);
             fputcsv($handle, ['Nama Petugas', ': ' . $matrix['officer_name'], '', 'Jabatan / Paraf', ': Analis']);
-            fputcsv($handle, ['Disetujui Oleh', ': Penyelia Lab', '', 'Jabatan / Paraf', ': Penyelia ' . $matrix['laboratory']['name']]);
+            fputcsv($handle, ['Disetujui Oleh', ': ' . $matrix['approver']['name'], '', 'Jabatan / Paraf', ': ' . $matrix['approver']['title']]);
             fputcsv($handle, []); // empty line
 
             // Column Header

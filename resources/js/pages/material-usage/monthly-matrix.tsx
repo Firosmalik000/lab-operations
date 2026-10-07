@@ -49,6 +49,10 @@ export type MatrixData = {
     };
     category_group: 'bahan' | 'alat';
     officer_name: string;
+    approver?: {
+        name: string;
+        title: string;
+    };
     rows: MatrixRow[];
     summary: {
         total_items: number;
@@ -289,9 +293,9 @@ export function MonthlyMatrixView({
                         <div className="flex flex-wrap items-center justify-between sm:justify-start sm:gap-4">
                             <div className="flex items-center">
                                 <span className="w-28 text-muted-foreground font-medium">Disetujui Oleh</span>
-                                <span className="font-semibold text-foreground">: Penyelia Lab</span>
+                                <span className="font-semibold text-foreground">: {matrix.approver?.name || 'Aisyatul Faizah'}</span>
                             </div>
-                            <span className="text-muted-foreground text-[11px]">(Jabatan/Paraf: Penyelia {matrix.laboratory.name})</span>
+                            <span className="text-muted-foreground text-[11px]">(Jabatan/Paraf: {matrix.approver?.title || `Penyelia ${matrix.laboratory.name}`})</span>
                         </div>
                     </div>
                 </div>
