@@ -14,18 +14,40 @@ use App\Models\MaterialUsage;
 use App\Models\StockMovement;
 use App\Models\Unit;
 use App\Services\AuditService;
+use App\Services\MonthlyUsageMatrixService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MaterialUsageController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, MonthlyUsageMatrixService $matrixService): Response
     {
         $user = $request->user();
+        $laboratories = $this->laboratories($request);
+        $defaultLabId = $user->default_laboratory_id ?? ($laboratories[0]['id'] ?? null);
+
+        $viewMode = $request->query('view', 'table');
+        $matrixLabId = $request->integer('matrix_laboratory_id', $defaultLabId ?? 0);
+        $matrixYear = $request->integer('matrix_year', (int) now()->year);
+        $matrixMonth = $request->integer('matrix_month', (int) now()->month);
+        $matrixCategoryGroup = $request->input('matrix_category_group', 'bahan');
+
+        $matrixData = null;
+        if ($viewMode === 'matrix' && $matrixLabId) {
+            $matrixData = $matrixService->getMatrixData(
+                $user,
+                $matrixLabId,
+                $matrixYear,
+                $matrixMonth,
+                $matrixCategoryGroup
+            );
+        }
+
         $query = MaterialUsage::query()->visibleTo($user)
             ->with(['laboratory:id,name', 'creator:id,name'])
             ->withCount('items');
@@ -59,14 +81,34 @@ class MaterialUsageController extends Controller
                 'status' => $request->input('status', ''),
                 'date_from' => $dateFrom ?? '',
                 'date_to' => $dateTo ?? '',
+                'view' => $viewMode,
+                'matrix_laboratory_id' => $matrixLabId,
+                'matrix_year' => $matrixYear,
+                'matrix_month' => $matrixMonth,
+                'matrix_category_group' => $matrixCategoryGroup,
             ],
-            'laboratories' => $this->laboratories($request),
+            'matrixData' => $matrixData,
+            'laboratories' => $laboratories,
             'can' => [
                 'create' => $user->can('material-usage.create'),
                 'update' => $user->can('material-usage.update'),
                 'delete' => $user->can('material-usage.delete'),
             ],
         ]);
+    }
+
+    public function exportMonthly(Request $request, MonthlyUsageMatrixService $matrixService): StreamedResponse
+    {
+        $user = $request->user();
+        $laboratories = $this->laboratories($request);
+        $defaultLabId = $user->default_laboratory_id ?? ($laboratories[0]['id'] ?? 1);
+
+        $laboratoryId = $request->integer('laboratory_id', $defaultLabId);
+        $year = $request->integer('year', (int) now()->year);
+        $month = $request->integer('month', (int) now()->month);
+        $categoryGroup = $request->input('category_group', 'bahan');
+
+        return $matrixService->exportCsv($user, $laboratoryId, $year, $month, $categoryGroup);
     }
 
     public function create(Request $request): Response

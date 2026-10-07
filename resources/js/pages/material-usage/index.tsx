@@ -2,6 +2,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Calendar,
     Eye,
+    FileSpreadsheet,
+    ListFilter,
     Pencil,
     Plus,
     RotateCcw,
@@ -23,6 +25,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { type MatrixData, MonthlyMatrixView } from './monthly-matrix';
 
 type Usage = {
     id: number;
@@ -77,14 +80,17 @@ const formatDate = (dateStr: string) => {
 export default function UsageIndex({
     usages,
     filters,
+    matrixData,
     laboratories,
     can,
 }: {
     usages: Page<Usage>;
     filters: Record<string, string>;
+    matrixData?: MatrixData | null;
     laboratories: { id: number; name: string }[];
     can: { create: boolean; update: boolean; delete: boolean };
 }) {
+    const viewMode = filters.view === 'matrix' ? 'matrix' : 'table';
     const defaultDates = getDefaultDateRange();
     const [search, setSearch] = useState(filters.search ?? '');
     const [dateFrom, setDateFrom] = useState(
@@ -337,169 +343,240 @@ export default function UsageIndex({
                     }
                 />
 
-                <Card>
-                    <CardContent className="flex flex-col gap-3 p-3.5 sm:p-4">
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <form
-                                className="relative sm:col-span-2"
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    apply({ search });
-                                }}
-                            >
-                                <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
-                                <Input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="h-9 pl-9 text-sm"
-                                    placeholder="Cari nomor atau keperluan…"
-                                />
-                            </form>
-                            <Select
-                                value={filters.laboratory_id || 'all'}
-                                onValueChange={(value) =>
-                                    apply({
-                                        laboratory_id:
-                                            value === 'all' ? '' : value,
-                                    })
-                                }
-                            >
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue placeholder="Semua lab" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        Semua laboratorium
-                                    </SelectItem>
-                                    {laboratories.map((lab) => (
-                                        <SelectItem
-                                            key={lab.id}
-                                            value={String(lab.id)}
+                {/* View Mode Switcher */}
+                <div className="flex items-center justify-between border-b pb-3">
+                    <div className="flex items-center gap-1 rounded-lg border bg-muted/60 p-1">
+                        <button
+                            type="button"
+                            onClick={() =>
+                                router.get(
+                                    '/material-usages',
+                                    { ...filters, view: 'table' },
+                                    { preserveState: true },
+                                )
+                            }
+                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                viewMode === 'table'
+                                    ? 'bg-background text-foreground shadow-xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            <ListFilter className="size-3.5" />
+                            <span>Daftar Transaksi</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() =>
+                                router.get(
+                                    '/material-usages',
+                                    { ...filters, view: 'matrix' },
+                                    { preserveState: true },
+                                )
+                            }
+                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                viewMode === 'matrix'
+                                    ? 'bg-background text-foreground shadow-xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Matriks Pemakaian Bulanan (Excel)</span>
+                        </button>
+                    </div>
+                </div>
+
+                {viewMode === 'matrix' ? (
+                    matrixData ? (
+                        <MonthlyMatrixView
+                            matrix={matrixData}
+                            laboratories={laboratories}
+                            filters={filters}
+                        />
+                    ) : (
+                        <div className="py-12 text-center text-sm text-muted-foreground">
+                            Memuat data matriks bulanan...
+                        </div>
+                    )
+                ) : (
+                    <>
+                        <Card>
+                            <CardContent className="flex flex-col gap-3 p-3.5 sm:p-4">
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                    <form
+                                        className="relative sm:col-span-2"
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            apply({ search });
+                                        }}
+                                    >
+                                        <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
+                                        <Input
+                                            value={search}
+                                            onChange={(e) =>
+                                                setSearch(e.target.value)
+                                            }
+                                            className="h-9 pl-9 text-sm"
+                                            placeholder="Cari nomor atau keperluan…"
+                                        />
+                                    </form>
+                                    <Select
+                                        value={filters.laboratory_id || 'all'}
+                                        onValueChange={(value) =>
+                                            apply({
+                                                laboratory_id:
+                                                    value === 'all'
+                                                        ? ''
+                                                        : value,
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9 text-sm">
+                                            <SelectValue placeholder="Semua lab" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                Semua laboratorium
+                                            </SelectItem>
+                                            {laboratories.map((lab) => (
+                                                <SelectItem
+                                                    key={lab.id}
+                                                    value={String(lab.id)}
+                                                >
+                                                    {lab.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Select
+                                        value={filters.status || 'all'}
+                                        onValueChange={(value) =>
+                                            apply({
+                                                status:
+                                                    value === 'all'
+                                                        ? ''
+                                                        : value,
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9 text-sm">
+                                            <SelectValue placeholder="Semua status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                Semua status
+                                            </SelectItem>
+                                            <SelectItem value="DRAFT">
+                                                DRAFT
+                                            </SelectItem>
+                                            <SelectItem value="SUBMITTED">
+                                                SUBMITTED
+                                            </SelectItem>
+                                            <SelectItem value="VOIDED">
+                                                VOIDED
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            <Calendar className="size-3.5 text-muted-foreground" />
+                                            <span className="font-medium text-foreground">
+                                                Rentang:
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Input
+                                                type="date"
+                                                value={dateFrom}
+                                                onChange={(e) =>
+                                                    handleDateFromChange(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="h-8 w-[138px] text-xs"
+                                                aria-label="Dari tanggal"
+                                            />
+                                            <span className="text-xs text-muted-foreground">
+                                                s/d
+                                            </span>
+                                            <Input
+                                                type="date"
+                                                value={dateTo}
+                                                onChange={(e) =>
+                                                    handleDateToChange(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="h-8 w-[138px] text-xs"
+                                                aria-label="Sampai tanggal"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 px-2.5 text-xs"
+                                                onClick={setToday}
+                                                title="Lihat transaksi hari ini"
+                                            >
+                                                Hari Ini
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 px-2.5 text-xs"
+                                                onClick={setCurrentMonth}
+                                                title="Lihat transaksi bulan ini"
+                                            >
+                                                Bulan Ini
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {hasFilters && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                                            onClick={resetFilters}
+                                            title="Reset filter"
                                         >
-                                            {lab.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select
-                                value={filters.status || 'all'}
-                                onValueChange={(value) =>
-                                    apply({
-                                        status: value === 'all' ? '' : value,
-                                    })
-                                }
-                            >
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue placeholder="Semua status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        Semua status
-                                    </SelectItem>
-                                    <SelectItem value="DRAFT">DRAFT</SelectItem>
-                                    <SelectItem value="SUBMITTED">
-                                        SUBMITTED
-                                    </SelectItem>
-                                    <SelectItem value="VOIDED">
-                                        VOIDED
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    <Calendar className="size-3.5 text-muted-foreground" />
-                                    <span className="font-medium text-foreground">
-                                        Rentang:
-                                    </span>
+                                            <RotateCcw className="size-3.5" />
+                                            Reset Filter
+                                        </Button>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Input
-                                        type="date"
-                                        value={dateFrom}
-                                        onChange={(e) =>
-                                            handleDateFromChange(e.target.value)
-                                        }
-                                        className="h-8 w-[138px] text-xs"
-                                        aria-label="Dari tanggal"
-                                    />
-                                    <span className="text-xs text-muted-foreground">
-                                        s/d
-                                    </span>
-                                    <Input
-                                        type="date"
-                                        value={dateTo}
-                                        onChange={(e) =>
-                                            handleDateToChange(e.target.value)
-                                        }
-                                        className="h-8 w-[138px] text-xs"
-                                        aria-label="Sampai tanggal"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-8 px-2.5 text-xs"
-                                        onClick={setToday}
-                                        title="Lihat transaksi hari ini"
-                                    >
-                                        Hari Ini
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-8 px-2.5 text-xs"
-                                        onClick={setCurrentMonth}
-                                        title="Lihat transaksi bulan ini"
-                                    >
-                                        Bulan Ini
-                                    </Button>
-                                </div>
-                            </div>
+                            </CardContent>
+                        </Card>
 
-                            {hasFilters && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground"
-                                    onClick={resetFilters}
-                                    title="Reset filter"
-                                >
-                                    <RotateCcw className="size-3.5" />
-                                    Reset Filter
-                                </Button>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+                        <DataTable
+                            data={usages.data}
+                            columns={columns}
+                            keyExtractor={(usage) => usage.id}
+                            paginationLinks={usages.links}
+                            emptyTitle="Transaksi tidak ditemukan"
+                            emptyDescription="Ubah filter pencarian atau catat penggunaan bahan baru."
+                        />
 
-                <DataTable
-                    data={usages.data}
-                    columns={columns}
-                    keyExtractor={(usage) => usage.id}
-                    paginationLinks={usages.links}
-                    emptyTitle="Transaksi tidak ditemukan"
-                    emptyDescription="Ubah filter pencarian atau catat penggunaan bahan baru."
-                />
-
-                <ConfirmDeleteDialog
-                    open={Boolean(deletingUsage)}
-                    onOpenChange={(v) => !v && setDeletingUsage(null)}
-                    itemName={deletingUsage?.number}
-                    title={
-                        deletingUsage?.status === 'VOIDED'
-                            ? 'Hapus Transaksi VOIDED'
-                            : 'Hapus Draf Penggunaan'
-                    }
-                    description="Transaksi penggunaan ini akan dihapus permanen beserta seluruh item dan movement stok terkait."
-                    loading={isDeleting}
-                    onConfirm={confirmDelete}
-                />
+                        <ConfirmDeleteDialog
+                            open={Boolean(deletingUsage)}
+                            onOpenChange={(v) => !v && setDeletingUsage(null)}
+                            itemName={deletingUsage?.number}
+                            title={
+                                deletingUsage?.status === 'VOIDED'
+                                    ? 'Hapus Transaksi VOIDED'
+                                    : 'Hapus Draf Penggunaan'
+                            }
+                            description="Transaksi penggunaan ini akan dihapus permanen beserta seluruh item dan movement stok terkait."
+                            loading={isDeleting}
+                            onConfirm={confirmDelete}
+                        />
+                    </>
+                )}
             </div>
         </>
     );

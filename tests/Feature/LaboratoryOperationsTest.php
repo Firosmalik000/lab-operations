@@ -114,6 +114,44 @@ class LaboratoryOperationsTest extends TestCase
             ->assertDontSee($augustUsage->number);
     }
 
+    public function test_monthly_usage_matrix_view_and_export(): void
+    {
+        $mediaItem = $this->item('MEDIA-01', InventoryMode::Stock);
+
+        $usage = MaterialUsage::create([
+            'number' => 'USE-20260910-0001',
+            'usage_date' => '2026-09-10',
+            'laboratory_id' => $this->laboratory->id,
+            'status' => 'SUBMITTED',
+            'created_by' => $this->staff->id,
+        ]);
+
+        $usage->items()->create([
+            'item_id' => $mediaItem->id,
+            'quantity' => 25,
+            'unit_id' => $this->unit->id,
+        ]);
+
+        // Access matrix view
+        $response = $this->actingAs($this->staff)->get('/material-usages?view=matrix&matrix_laboratory_id='.$this->laboratory->id.'&matrix_year=2026&matrix_month=9&matrix_category_group=bahan')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('material-usage/index')
+                ->has('matrixData')
+                ->where('matrixData.period.month', 9)
+                ->where('matrixData.period.year', 2026)
+                ->where('matrixData.laboratory.id', $this->laboratory->id)
+            );
+
+        // Access matrix export CSV
+        $export = $this->actingAs($this->staff)->get('/material-usages/export-monthly?laboratory_id='.$this->laboratory->id.'&year=2026&month=9&category_group=bahan')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $this->assertStringContainsString('STOCK OPNAME BAHAN KIMIA', $export->streamedContent());
+        $this->assertStringContainsString('MEDIA-01', $export->streamedContent());
+    }
+
     public function test_none_item_usage_succeeds_without_stock_movement_and_supports_multiple_items(): void
     {
         $first = $this->item('NONE-1', InventoryMode::None);
