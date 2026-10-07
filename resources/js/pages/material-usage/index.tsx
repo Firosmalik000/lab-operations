@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     Calendar,
+    Download,
     Eye,
     FileSpreadsheet,
     ListFilter,
@@ -325,6 +326,16 @@ export default function UsageIndex({
         },
     ];
 
+    const transactionExportUrl = `/material-usages/export?${new URLSearchParams({
+        ...(filters.search ? { search: filters.search } : {}),
+        ...(filters.laboratory_id
+            ? { laboratory_id: filters.laboratory_id }
+            : {}),
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(dateFrom ? { date_from: dateFrom } : {}),
+        ...(dateTo ? { date_to: dateTo } : {}),
+    }).toString()}`;
+
     return (
         <>
             <Head title="Riwayat Penggunaan" />
@@ -332,14 +343,29 @@ export default function UsageIndex({
                 <PageHeading
                     title="Riwayat Penggunaan"
                     actions={
-                        can.create && (
-                            <Button asChild size="sm" className="gap-1.5">
-                                <Link href="/material-usages/create">
-                                    <Plus className="size-4" />
-                                    Catat Penggunaan
-                                </Link>
-                            </Button>
-                        )
+                        <div className="flex items-center gap-2">
+                            {viewMode === 'table' && (
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5"
+                                >
+                                    <a href={transactionExportUrl}>
+                                        <Download className="size-4" />
+                                        Ekspor CSV
+                                    </a>
+                                </Button>
+                            )}
+                            {can.create && (
+                                <Button asChild size="sm" className="gap-1.5">
+                                    <Link href="/material-usages/create">
+                                        <Plus className="size-4" />
+                                        Catat Penggunaan
+                                    </Link>
+                                </Button>
+                            )}
+                        </div>
                     }
                 />
 

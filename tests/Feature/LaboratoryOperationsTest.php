@@ -150,6 +150,14 @@ class LaboratoryOperationsTest extends TestCase
 
         $this->assertStringContainsString('STOCK OPNAME BAHAN KIMIA', $export->streamedContent());
         $this->assertStringContainsString('MEDIA-01', $export->streamedContent());
+
+        // Access transactions export CSV with date range
+        $txExport = $this->actingAs($this->staff)->get('/material-usages/export?date_from=2026-09-01&date_to=2026-09-30&laboratory_id='.$this->laboratory->id)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $this->assertStringContainsString('MEDIA-01', $txExport->streamedContent());
+        $this->assertStringContainsString('USE-20260910-0001', $txExport->streamedContent());
     }
 
     public function test_none_item_usage_succeeds_without_stock_movement_and_supports_multiple_items(): void

@@ -20,6 +20,7 @@ Route::post('invitations/{token}', [InvitationController::class, 'store'])->name
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
 
+    Route::get('material-usages/export', [MaterialUsageController::class, 'export'])->middleware('can:material-usage.view')->name('material-usages.export');
     Route::get('material-usages/export-monthly', [MaterialUsageController::class, 'exportMonthly'])->middleware('can:material-usage.view')->name('material-usages.export-monthly');
     Route::get('material-usages/items', [MaterialUsageController::class, 'items'])->name('material-usages.items');
     Route::get('material-usages', [MaterialUsageController::class, 'index'])->middleware('can:material-usage.view')->name('material-usages.index');
