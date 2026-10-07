@@ -73,6 +73,47 @@ class LaboratoryOperationsTest extends TestCase
         $this->actingAs($this->staff)->get("/material-usages/{$hidden->id}")->assertForbidden();
     }
 
+    public function test_material_usage_filtering_by_date_range(): void
+    {
+        $augustUsage = MaterialUsage::create([
+            'number' => 'USE-20260815-0001',
+            'usage_date' => '2026-08-15',
+            'laboratory_id' => $this->laboratory->id,
+            'status' => 'SUBMITTED',
+            'created_by' => $this->staff->id,
+        ]);
+
+        $septemberUsage = MaterialUsage::create([
+            'number' => 'USE-20260915-0001',
+            'usage_date' => '2026-09-15',
+            'laboratory_id' => $this->laboratory->id,
+            'status' => 'SUBMITTED',
+            'created_by' => $this->staff->id,
+        ]);
+
+        $octoberUsage = MaterialUsage::create([
+            'number' => 'USE-20261005-0001',
+            'usage_date' => '2026-10-05',
+            'laboratory_id' => $this->laboratory->id,
+            'status' => 'SUBMITTED',
+            'created_by' => $this->staff->id,
+        ]);
+
+        // Filter September only
+        $this->actingAs($this->staff)->get('/material-usages?date_from=2026-09-01&date_to=2026-09-30')
+            ->assertOk()
+            ->assertSee($septemberUsage->number)
+            ->assertDontSee($augustUsage->number)
+            ->assertDontSee($octoberUsage->number);
+
+        // Filter single day (harian)
+        $this->actingAs($this->staff)->get('/material-usages?date_from=2026-10-05&date_to=2026-10-05')
+            ->assertOk()
+            ->assertSee($octoberUsage->number)
+            ->assertDontSee($septemberUsage->number)
+            ->assertDontSee($augustUsage->number);
+    }
+
     public function test_none_item_usage_succeeds_without_stock_movement_and_supports_multiple_items(): void
     {
         $first = $this->item('NONE-1', InventoryMode::None);

@@ -1,6 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import {
+    Calendar,
+    Eye,
+    Pencil,
+    Plus,
+    RotateCcw,
+    Search,
+    Trash2,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import { PageHeading } from '@/components/page-heading';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +38,40 @@ type Usage = {
 type Page<T> = {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
+    from?: number | null;
+    to?: number | null;
+    total?: number;
+    current_page?: number;
+    per_page?: number;
+};
+
+const getDefaultDateRange = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const start = `${year}-${pad(month + 1)}-01`;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const end = `${year}-${pad(month + 1)}-${pad(lastDay)}`;
+    return { start, end };
+};
+
+const formatDate = (dateStr: string) => {
+    if (!dateStr) return '—';
+    try {
+        const [year, month, day] = dateStr.split('-');
+        if (year && month && day) {
+            const date = new Date(Number(year), Number(month) - 1, Number(day));
+            return new Intl.DateTimeFormat('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+            }).format(date);
+        }
+        return dateStr;
+    } catch {
+        return dateStr;
+    }
 };
 
 export default function UsageIndex({
@@ -43,9 +85,22 @@ export default function UsageIndex({
     laboratories: { id: number; name: string }[];
     can: { create: boolean; update: boolean; delete: boolean };
 }) {
+    const defaultDates = getDefaultDateRange();
     const [search, setSearch] = useState(filters.search ?? '');
+    const [dateFrom, setDateFrom] = useState(
+        filters.date_from ?? defaultDates.start,
+    );
+    const [dateTo, setDateTo] = useState(filters.date_to ?? defaultDates.end);
     const [deletingUsage, setDeletingUsage] = useState<Usage | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    useEffect(() => {
+        setDateFrom(filters.date_from ?? defaultDates.start);
+    }, [filters.date_from, defaultDates.start]);
+
+    useEffect(() => {
+        setDateTo(filters.date_to ?? defaultDates.end);
+    }, [filters.date_to, defaultDates.end]);
 
     const apply = (data: Record<string, string>) =>
         router.get(
@@ -53,6 +108,62 @@ export default function UsageIndex({
             { ...filters, ...data },
             { preserveState: true, replace: true },
         );
+
+    const handleDateFromChange = (value: string) => {
+        setDateFrom(value);
+        apply({ date_from: value });
+    };
+
+    const handleDateToChange = (value: string) => {
+        setDateTo(value);
+        apply({ date_to: value });
+    };
+
+    const setToday = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        setDateFrom(todayStr);
+        setDateTo(todayStr);
+        apply({ date_from: todayStr, date_to: todayStr });
+    };
+
+    const setCurrentMonth = () => {
+        const { start, end } = getDefaultDateRange();
+        setDateFrom(start);
+        setDateTo(end);
+        apply({ date_from: start, date_to: end });
+    };
+
+    const resetFilters = () => {
+        const { start, end } = getDefaultDateRange();
+        setSearch('');
+        setDateFrom(start);
+        setDateTo(end);
+        router.get(
+            '/material-usages',
+            {
+                date_from: start,
+                date_to: end,
+            },
+            { preserveState: true, replace: true },
+        );
+    };
+
+    const isCustomDate =
+        Boolean(
+            filters.date_from && filters.date_from !== defaultDates.start,
+        ) ||
+        Boolean(filters.date_to && filters.date_to !== defaultDates.end);
+
+    const hasFilters = Boolean(
+        filters.search ||
+            filters.laboratory_id ||
+            filters.status ||
+            isCustomDate,
+    );
 
     const confirmDelete = () => {
         if (!deletingUsage) return;
@@ -63,10 +174,6 @@ export default function UsageIndex({
             onFinish: () => setIsDeleting(false),
         });
     };
-
-    const hasFilters = Boolean(
-        filters.search || filters.laboratory_id || filters.status,
-    );
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -94,19 +201,38 @@ export default function UsageIndex({
 
     const columns: Column<Usage>[] = [
         {
-            header: 'Nomor & Tanggal',
+            header: 'No',
+            className: 'w-[80px] whitespace-nowrap',
+            headerClassName: 'w-[80px]',
+            cell: (usage, index) => {
+                const rowNumber = (usages.from ?? 1) + index;
+                return (
+                    <div className="flex items-center gap-1.5">
+                        <span className="min-w-[20px] text-xs font-medium text-muted-foreground tabular-nums">
+                            {rowNumber}
+                        </span>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7 text-muted-foreground hover:text-foreground"
+                            asChild
+                            title="Lihat Detail"
+                        >
+                            <Link href={`/material-usages/${usage.id}`}>
+                                <Eye className="size-3.5" />
+                            </Link>
+                        </Button>
+                    </div>
+                );
+            },
+        },
+        {
+            header: 'Tanggal',
+            className: 'whitespace-nowrap',
             cell: (usage) => (
-                <div className="min-w-[150px]">
-                    <Link
-                        href={`/material-usages/${usage.id}`}
-                        className="font-semibold text-primary hover:underline"
-                    >
-                        {usage.number}
-                    </Link>
-                    <p className="text-xs text-muted-foreground tabular-nums">
-                        {usage.usage_date}
-                    </p>
-                </div>
+                <span className="text-sm font-medium text-foreground tabular-nums">
+                    {formatDate(usage.usage_date)}
+                </span>
             ),
         },
         {
@@ -143,21 +269,17 @@ export default function UsageIndex({
         {
             header: <span className="sr-only">Aksi</span>,
             className: 'text-right whitespace-nowrap',
-            cell: (usage) => (
-                <div className="flex items-center justify-end gap-1">
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-8 text-muted-foreground hover:text-foreground"
-                        asChild
-                        title="Lihat Detail"
-                    >
-                        <Link href={`/material-usages/${usage.id}`}>
-                            <Eye className="size-3.5" />
-                        </Link>
-                    </Button>
-                    {['DRAFT', 'VOIDED'].includes(usage.status) &&
-                        can.update && (
+            cell: (usage) => {
+                const canEdit =
+                    ['DRAFT', 'VOIDED'].includes(usage.status) && can.update;
+                const canDelete =
+                    ['DRAFT', 'VOIDED'].includes(usage.status) && can.delete;
+
+                if (!canEdit && !canDelete) return null;
+
+                return (
+                    <div className="flex items-center justify-end gap-1">
+                        {canEdit && (
                             <Button
                                 size="icon"
                                 variant="ghost"
@@ -176,8 +298,7 @@ export default function UsageIndex({
                                 </Link>
                             </Button>
                         )}
-                    {['DRAFT', 'VOIDED'].includes(usage.status) &&
-                        can.delete && (
+                        {canDelete && (
                             <Button
                                 size="icon"
                                 variant="ghost"
@@ -192,8 +313,9 @@ export default function UsageIndex({
                                 <Trash2 className="size-3.5" />
                             </Button>
                         )}
-                </div>
-            ),
+                    </div>
+                );
+            },
         },
     ];
 
@@ -216,78 +338,143 @@ export default function UsageIndex({
                 />
 
                 <Card>
-                    <CardContent className="grid gap-3 p-3.5 sm:grid-cols-[1fr_200px_160px_auto]">
-                        <form
-                            className="relative"
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                apply({ search });
-                            }}
-                        >
-                            <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
-                            <Input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="h-9 pl-9 text-sm"
-                                placeholder="Cari nomor atau keperluan…"
-                            />
-                        </form>
-                        <Select
-                            value={filters.laboratory_id || 'all'}
-                            onValueChange={(value) =>
-                                apply({
-                                    laboratory_id: value === 'all' ? '' : value,
-                                })
-                            }
-                        >
-                            <SelectTrigger className="h-9 text-sm">
-                                <SelectValue placeholder="Semua lab" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    Semua laboratorium
-                                </SelectItem>
-                                {laboratories.map((lab) => (
-                                    <SelectItem
-                                        key={lab.id}
-                                        value={String(lab.id)}
-                                    >
-                                        {lab.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={filters.status || 'all'}
-                            onValueChange={(value) =>
-                                apply({ status: value === 'all' ? '' : value })
-                            }
-                        >
-                            <SelectTrigger className="h-9 text-sm">
-                                <SelectValue placeholder="Semua status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    Semua status
-                                </SelectItem>
-                                <SelectItem value="DRAFT">DRAFT</SelectItem>
-                                <SelectItem value="SUBMITTED">
-                                    SUBMITTED
-                                </SelectItem>
-                                <SelectItem value="VOIDED">VOIDED</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {hasFilters && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-9 px-2.5 text-muted-foreground"
-                                onClick={() => router.get('/material-usages')}
-                                title="Reset filter"
+                    <CardContent className="flex flex-col gap-3 p-3.5 sm:p-4">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <form
+                                className="relative sm:col-span-2"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    apply({ search });
+                                }}
                             >
-                                <RotateCcw className="size-4" />
-                            </Button>
-                        )}
+                                <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
+                                <Input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="h-9 pl-9 text-sm"
+                                    placeholder="Cari nomor atau keperluan…"
+                                />
+                            </form>
+                            <Select
+                                value={filters.laboratory_id || 'all'}
+                                onValueChange={(value) =>
+                                    apply({
+                                        laboratory_id:
+                                            value === 'all' ? '' : value,
+                                    })
+                                }
+                            >
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Semua lab" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        Semua laboratorium
+                                    </SelectItem>
+                                    {laboratories.map((lab) => (
+                                        <SelectItem
+                                            key={lab.id}
+                                            value={String(lab.id)}
+                                        >
+                                            {lab.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={filters.status || 'all'}
+                                onValueChange={(value) =>
+                                    apply({
+                                        status: value === 'all' ? '' : value,
+                                    })
+                                }
+                            >
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Semua status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        Semua status
+                                    </SelectItem>
+                                    <SelectItem value="DRAFT">DRAFT</SelectItem>
+                                    <SelectItem value="SUBMITTED">
+                                        SUBMITTED
+                                    </SelectItem>
+                                    <SelectItem value="VOIDED">
+                                        VOIDED
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Calendar className="size-3.5 text-muted-foreground" />
+                                    <span className="font-medium text-foreground">
+                                        Rentang:
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <Input
+                                        type="date"
+                                        value={dateFrom}
+                                        onChange={(e) =>
+                                            handleDateFromChange(e.target.value)
+                                        }
+                                        className="h-8 w-[138px] text-xs"
+                                        aria-label="Dari tanggal"
+                                    />
+                                    <span className="text-xs text-muted-foreground">
+                                        s/d
+                                    </span>
+                                    <Input
+                                        type="date"
+                                        value={dateTo}
+                                        onChange={(e) =>
+                                            handleDateToChange(e.target.value)
+                                        }
+                                        className="h-8 w-[138px] text-xs"
+                                        aria-label="Sampai tanggal"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 px-2.5 text-xs"
+                                        onClick={setToday}
+                                        title="Lihat transaksi hari ini"
+                                    >
+                                        Hari Ini
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 px-2.5 text-xs"
+                                        onClick={setCurrentMonth}
+                                        title="Lihat transaksi bulan ini"
+                                    >
+                                        Bulan Ini
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {hasFilters && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                                    onClick={resetFilters}
+                                    title="Reset filter"
+                                >
+                                    <RotateCcw className="size-3.5" />
+                                    Reset Filter
+                                </Button>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
 

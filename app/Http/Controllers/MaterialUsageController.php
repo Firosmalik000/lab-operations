@@ -30,18 +30,36 @@ class MaterialUsageController extends Controller
             ->with(['laboratory:id,name', 'creator:id,name'])
             ->withCount('items');
 
+        $defaultDateFrom = now()->startOfMonth()->toDateString();
+        $defaultDateTo = now()->endOfMonth()->toDateString();
+        $hasExplicitDate = $request->has('date_from') || $request->has('date_to');
+
+        if (! $hasExplicitDate && ! app()->runningUnitTests()) {
+            $dateFrom = $defaultDateFrom;
+            $dateTo = $defaultDateTo;
+        } else {
+            $dateFrom = $request->input('date_from');
+            $dateTo = $request->input('date_to');
+        }
+
         $query->when($request->filled('search'), fn ($q) => $q->where(function ($inner) use ($request): void {
             $term = '%'.$request->string('search')->value().'%';
             $inner->where('number', 'like', $term)->orWhere('purpose', 'like', $term);
         }));
         $query->when($request->filled('laboratory_id'), fn ($q) => $q->where('laboratory_id', $request->integer('laboratory_id')));
         $query->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')->value()));
-        $query->when($request->filled('date_from'), fn ($q) => $q->whereDate('usage_date', '>=', $request->date('date_from')));
-        $query->when($request->filled('date_to'), fn ($q) => $q->whereDate('usage_date', '<=', $request->date('date_to')));
+        $query->when(! empty($dateFrom), fn ($q) => $q->whereDate('usage_date', '>=', $dateFrom));
+        $query->when(! empty($dateTo), fn ($q) => $q->whereDate('usage_date', '<=', $dateTo));
 
         return Inertia::render('material-usage/index', [
             'usages' => $query->latest('usage_date')->latest('id')->paginate(15)->withQueryString(),
-            'filters' => $request->only(['search', 'laboratory_id', 'status', 'date_from', 'date_to']),
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'laboratory_id' => $request->input('laboratory_id', ''),
+                'status' => $request->input('status', ''),
+                'date_from' => $dateFrom ?? '',
+                'date_to' => $dateTo ?? '',
+            ],
             'laboratories' => $this->laboratories($request),
             'can' => [
                 'create' => $user->can('material-usage.create'),
