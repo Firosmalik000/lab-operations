@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -138,6 +139,9 @@ class UserAdministrationController extends Controller
     {
         abort_unless($request->user()->can('users.manage'), 403);
         $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => ['nullable', 'confirmed', Password::defaults()],
             'role_ids' => ['required', 'array', 'min:1'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
             'laboratory_ids' => ['required', 'array', 'min:1'],
@@ -155,14 +159,32 @@ class UserAdministrationController extends Controller
             throw ValidationException::withMessages(['role_ids' => 'Super Admin aktif terakhir tidak dapat dinonaktifkan atau dihapus rolenya.']);
         }
         DB::transaction(function () use ($user, $data, $audit, $request): void {
-            $old = ['roles' => $user->roles()->pluck('roles.id'), 'laboratories' => $user->laboratories()->pluck('laboratories.id'), 'is_active' => $user->is_active];
+            $old = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->roles()->pluck('roles.id'),
+                'laboratories' => $user->laboratories()->pluck('laboratories.id'),
+                'is_active' => $user->is_active,
+            ];
             $user->roles()->sync($data['role_ids']);
             $user->laboratories()->sync($data['laboratory_ids']);
-            $user->update(['default_laboratory_id' => $data['default_laboratory_id'], 'is_active' => $data['is_active']]);
-            $audit->record('permission-change', $user, $old, $data, $request);
+
+            $updatePayload = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'default_laboratory_id' => $data['default_laboratory_id'],
+                'is_active' => $data['is_active'],
+            ];
+
+            if (! empty($data['password'])) {
+                $updatePayload['password'] = Hash::make($data['password']);
+            }
+
+            $user->update($updatePayload);
+            $audit->record('update', $user, $old, array_diff_key($data, array_flip(['password', 'password_confirmation'])), $request);
         });
 
-        return back()->with('success', 'Akses user berhasil diperbarui.');
+        return back()->with('success', "Data user {$user->name} berhasil diperbarui.");
     }
 
     public function store(Request $request, AuditService $audit): RedirectResponse

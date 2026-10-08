@@ -115,6 +115,10 @@ export default function Users({
     });
 
     const form = useForm({
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
         role_ids: [] as number[],
         laboratory_ids: [] as number[],
         default_laboratory_id: null as number | null,
@@ -124,6 +128,10 @@ export default function Users({
     const show = (user: User) => {
         setSelected(user);
         form.setData({
+            name: user.name,
+            email: user.email,
+            password: '',
+            password_confirmation: '',
             role_ids: user.roles.map((role) => role.id),
             laboratory_ids: user.laboratories.map((lab) => lab.id),
             default_laboratory_id: user.default_laboratory_id,
@@ -676,10 +684,96 @@ export default function Users({
                         <form onSubmit={submit}>
                             <DialogHeader>
                                 <DialogTitle>
-                                    Edit Akses: {selected?.name}
+                                    Edit Pengguna: {selected?.name}
                                 </DialogTitle>
                             </DialogHeader>
                             <div className="my-4 grid gap-4">
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="edit-name">
+                                        Nama Lengkap
+                                    </Label>
+                                    <Input
+                                        id="edit-name"
+                                        value={form.data.name}
+                                        onChange={(e) =>
+                                            form.setData('name', e.target.value)
+                                        }
+                                        placeholder="Nama Pengguna"
+                                        required
+                                    />
+                                    <InputError message={form.errors.name} />
+                                </div>
+
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="edit-email">
+                                        Alamat Email
+                                    </Label>
+                                    <Input
+                                        id="edit-email"
+                                        type="email"
+                                        value={form.data.email}
+                                        onChange={(e) =>
+                                            form.setData('email', e.target.value)
+                                        }
+                                        placeholder="email@laboratorium.id"
+                                        required
+                                    />
+                                    <InputError message={form.errors.email} />
+                                </div>
+
+                                <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+                                    Kosongkan kata sandi jika tidak ingin mengubah kata sandi pengguna ini.
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="edit-password">
+                                            Kata Sandi Baru (Opsional)
+                                        </Label>
+                                        <Input
+                                            id="edit-password"
+                                            type="password"
+                                            value={form.data.password}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'password',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="Minimal 8 karakter"
+                                        />
+                                        <InputError
+                                            message={form.errors.password}
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="edit-password-confirmation">
+                                            Konfirmasi Kata Sandi
+                                        </Label>
+                                        <Input
+                                            id="edit-password-confirmation"
+                                            type="password"
+                                            value={
+                                                form.data.password_confirmation
+                                            }
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'password_confirmation',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="Ulangi kata sandi baru"
+                                        />
+                                        <InputError
+                                            message={
+                                                form.errors
+                                                    .password_confirmation
+                                            }
+                                        />
+                                    </div>
+                                </div>
+
                                 <fieldset className="grid gap-2">
                                     <legend className="text-sm font-medium">
                                         Role Akses
