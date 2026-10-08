@@ -153,12 +153,22 @@ export function MonthlyMatrixView({
                             <Button
                                 asChild
                                 size="sm"
+                                className="h-8 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                            >
+                                <a href={`${exportUrl}&format=xlsx`}>
+                                    <Download className="size-3.5" />
+                                    Download Excel (.xlsx)
+                                </a>
+                            </Button>
+                            <Button
+                                asChild
+                                size="sm"
                                 variant="outline"
                                 className="h-8 gap-1.5 text-xs"
                             >
-                                <a href={exportUrl}>
+                                <a href={`${exportUrl}&format=csv`}>
                                     <Download className="size-3.5" />
-                                    Ekspor Format Excel (CSV)
+                                    CSV
                                 </a>
                             </Button>
                         </div>
@@ -302,76 +312,88 @@ export function MonthlyMatrixView({
             </div>
 
             {/* Spreadsheet Matrix Table */}
-            <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
-                <div className="overflow-x-auto max-h-[640px]">
-                    <table className="w-full border-collapse text-left text-xs">
-                        <thead className="sticky top-0 z-20 bg-muted/95 backdrop-blur-xs text-foreground font-semibold">
-                            <tr className="border-b">
+            <div className="overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700 bg-card shadow-sm">
+                <div className="overflow-x-auto max-h-[680px]">
+                    <table className="w-full border-collapse text-left text-xs border border-slate-300 dark:border-slate-700">
+                        <thead className="sticky top-0 z-20 bg-[#1b365d] text-white font-semibold">
+                            <tr className="border-b border-slate-400/30">
                                 <th
                                     rowSpan={2}
-                                    className="w-10 border-r px-2.5 py-2 text-center"
+                                    className="w-10 border-r border-slate-400/30 px-2 py-2 text-center"
                                 >
                                     No.
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="min-w-[110px] border-r px-3 py-2"
+                                    className="min-w-[100px] border-r border-slate-400/30 px-3 py-2"
+                                >
+                                    Kode
+                                </th>
+                                <th
+                                    rowSpan={2}
+                                    className="min-w-[120px] border-r border-slate-400/30 px-3 py-2"
                                 >
                                     CAS / Catalog No.
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="min-w-[200px] border-r px-3 py-2 sticky left-0 z-30 bg-muted/95"
+                                    className="min-w-[220px] border-r border-slate-400/30 px-3 py-2 sticky left-0 z-30 bg-[#1b365d] text-white"
                                 >
                                     Nama Bahan
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="min-w-[100px] border-r px-2.5 py-2 text-center"
+                                    className="min-w-[90px] border-r border-slate-400/30 px-2 py-2 text-center"
                                 >
-                                    Bentuk
+                                    Rumus
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="w-14 border-r px-2 py-2 text-center"
+                                    className="w-16 border-r border-slate-400/30 px-2 py-2 text-center"
+                                >
+                                    Volume
+                                </th>
+                                <th
+                                    rowSpan={2}
+                                    className="w-16 border-r border-slate-400/30 px-2 py-2 text-center"
                                 >
                                     Satuan
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="w-20 border-r bg-amber-500/15 px-2 py-2 text-right font-bold"
+                                    className="w-20 border-r border-slate-400/30 px-2 py-2 text-right font-bold"
                                 >
                                     Total Masuk
                                 </th>
                                 <th
                                     colSpan={days.length}
-                                    className="border-b border-r py-1 text-center font-bold tracking-wider"
+                                    className="border-b border-r border-slate-400/30 py-1 text-center font-bold tracking-wider"
                                 >
-                                    Tanggal
+                                    tanggal
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="w-20 border-r bg-amber-500/20 px-2 py-2 text-right font-bold"
+                                    className="w-20 border-r border-slate-400/30 px-2 py-2 text-right font-bold"
                                 >
                                     Total Keluar
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="w-20 border-r px-2 py-2 text-right font-bold"
+                                    className="w-20 border-r border-slate-400/30 px-2 py-2 text-right font-bold"
                                 >
                                     Stock Akhir
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="w-20 border-r px-2 py-2 text-right"
+                                    className="w-20 border-r border-slate-400/30 px-2 py-2 text-right"
                                 >
                                     Stock Fisik
                                 </th>
                                 <th
                                     rowSpan={2}
-                                    className="w-20 border-r px-2 py-2 text-right"
+                                    className="w-20 border-r border-slate-400/30 px-2 py-2 text-right"
                                 >
-                                    Min. Stock
+                                    Minimum Stock
                                 </th>
                                 <th
                                     rowSpan={2}
@@ -380,11 +402,11 @@ export function MonthlyMatrixView({
                                     Status
                                 </th>
                             </tr>
-                            <tr className="border-b text-[11px]">
+                            <tr className="border-b border-slate-400/30 text-[11px]">
                                 {days.map((day) => (
                                     <th
                                         key={day}
-                                        className="w-8 border-r px-1 py-1 text-center font-mono tabular-nums text-muted-foreground"
+                                        className="w-8 border-r border-slate-400/30 px-1 py-1 text-center font-mono tabular-nums text-slate-200"
                                     >
                                         {day}
                                     </th>
@@ -392,11 +414,11 @@ export function MonthlyMatrixView({
                             </tr>
                         </thead>
 
-                        <tbody className="divide-y divide-border">
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                             {matrix.rows.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan={days.length + 10}
+                                        colSpan={days.length + 12}
                                         className="py-12 text-center text-muted-foreground"
                                     >
                                         Tidak ada item bahan/alat yang terdaftar
@@ -406,23 +428,26 @@ export function MonthlyMatrixView({
                             ) : (
                                 matrix.rows.map((row) => {
                                     const rowBg = row.is_expired
-                                        ? 'bg-rose-500/15 hover:bg-rose-500/20 text-rose-950 dark:text-rose-200'
-                                        : row.status === 'KRITIS'
-                                          ? 'bg-amber-500/10 hover:bg-amber-500/15'
-                                          : 'hover:bg-muted/40';
+                                        ? 'bg-rose-500/20 text-rose-950 dark:text-rose-200'
+                                        : row.total_keluar > 0
+                                          ? 'bg-yellow-200/70 hover:bg-yellow-200/90 text-foreground dark:bg-yellow-500/20'
+                                          : 'hover:bg-slate-50 dark:hover:bg-slate-900';
 
                                     return (
                                         <tr
                                             key={row.id}
-                                            className={`transition-colors ${rowBg}`}
+                                            className={`transition-colors border-b border-slate-200 dark:border-slate-800 ${rowBg}`}
                                         >
-                                            <td className="border-r px-2.5 py-1.5 text-center font-mono text-muted-foreground tabular-nums">
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-center font-mono text-muted-foreground tabular-nums">
                                                 {row.no}
                                             </td>
-                                            <td className="border-r px-3 py-1.5 font-mono text-muted-foreground whitespace-nowrap">
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 font-mono text-muted-foreground whitespace-nowrap">
+                                                —
+                                            </td>
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2.5 py-1 font-mono text-foreground whitespace-nowrap">
                                                 {row.code}
                                             </td>
-                                            <td className="border-r px-3 py-1.5 font-medium whitespace-nowrap sticky left-0 z-10 bg-inherit shadow-xs">
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-3 py-1 font-medium whitespace-nowrap sticky left-0 z-10 bg-inherit">
                                                 <span>{row.name}</span>
                                                 {row.is_expired && (
                                                     <span className="ml-2 inline-flex items-center text-[10px] font-bold text-rose-600 dark:text-rose-400">
@@ -430,14 +455,17 @@ export function MonthlyMatrixView({
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="border-r px-2 py-1.5 text-center text-muted-foreground whitespace-nowrap">
-                                                {row.category}
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-center text-muted-foreground whitespace-nowrap">
+                                                —
                                             </td>
-                                            <td className="border-r px-2 py-1.5 text-center text-muted-foreground">
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-center text-muted-foreground">
+                                                {row.notes ?? '—'}
+                                            </td>
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-center text-muted-foreground">
                                                 {row.unit}
                                             </td>
-                                            <td className="border-r bg-amber-500/10 px-2 py-1.5 text-right font-semibold tabular-nums">
-                                                {row.total_masuk || '—'}
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-right font-semibold tabular-nums">
+                                                {row.total_masuk || '0'}
                                             </td>
 
                                             {/* Kolom Tanggal 1..31 */}
@@ -446,48 +474,40 @@ export function MonthlyMatrixView({
                                                 return (
                                                     <td
                                                         key={day}
-                                                        className={`border-r px-1 py-1.5 text-center font-mono tabular-nums ${
+                                                        className={`border-r border-slate-200 dark:border-slate-800 px-1 py-1 text-center font-mono tabular-nums ${
                                                             val
-                                                                ? 'font-bold text-foreground bg-primary/10'
+                                                                ? 'font-bold text-foreground bg-amber-500/10'
                                                                 : 'text-muted-foreground/30'
                                                         }`}
                                                     >
-                                                        {val ?? '·'}
+                                                        {val ?? ''}
                                                     </td>
                                                 );
                                             })}
 
-                                            <td className="border-r bg-amber-500/10 px-2 py-1.5 text-right font-bold tabular-nums text-foreground">
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-right font-bold tabular-nums text-foreground">
                                                 {row.total_keluar > 0
                                                     ? row.total_keluar
                                                     : '0'}
                                             </td>
-                                            <td className="border-r px-2 py-1.5 text-right font-semibold tabular-nums text-foreground">
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-right font-semibold tabular-nums text-foreground">
                                                 {row.stock_akhir}
                                             </td>
-                                            <td className="border-r px-2 py-1.5 text-right font-medium tabular-nums text-muted-foreground">
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-right font-medium tabular-nums text-muted-foreground">
                                                 {row.stock_fisik}
                                             </td>
-                                            <td className="border-r px-2 py-1.5 text-right text-muted-foreground tabular-nums">
+                                            <td className="border-r border-slate-200 dark:border-slate-800 px-2 py-1 text-right text-muted-foreground tabular-nums">
                                                 {row.minimum_stock || '—'}
                                             </td>
-                                            <td className="px-2.5 py-1.5 text-center whitespace-nowrap">
+                                            <td className="px-2 py-1 text-center whitespace-nowrap">
                                                 {row.status === 'AMAN' ? (
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="h-5 px-1.5 text-[10px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                                                    >
-                                                        <ShieldCheck className="mr-0.5 size-3" />
+                                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                                                         AMAN
-                                                    </Badge>
+                                                    </span>
                                                 ) : (
-                                                    <Badge
-                                                        variant="destructive"
-                                                        className="h-5 px-1.5 text-[10px] font-semibold"
-                                                    >
-                                                        <ShieldAlert className="mr-0.5 size-3" />
+                                                    <span className="font-semibold text-rose-600 dark:text-rose-400">
                                                         KRITIS
-                                                    </Badge>
+                                                    </span>
                                                 )}
                                             </td>
                                         </tr>

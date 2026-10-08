@@ -170,12 +170,17 @@ class MaterialUsageController extends Controller
         $laboratories = $this->laboratories($request);
         $defaultLabId = $user->default_laboratory_id ?? ($laboratories[0]['id'] ?? 1);
 
-        $laboratoryId = $request->integer('laboratory_id', $defaultLabId);
-        $year = $request->integer('year', (int) now()->year);
-        $month = $request->integer('month', (int) now()->month);
-        $categoryGroup = $request->input('category_group', 'bahan');
+        $laboratoryId = $request->integer('matrix_laboratory_id', $request->integer('laboratory_id', $defaultLabId));
+        $year = $request->integer('matrix_year', $request->integer('year', (int) now()->year));
+        $month = $request->integer('matrix_month', $request->integer('month', (int) now()->month));
+        $categoryGroup = $request->input('matrix_category_group', $request->input('category_group', 'bahan'));
+        $format = $request->input('format', 'xlsx');
 
-        return $matrixService->exportCsv($user, $laboratoryId, $year, $month, $categoryGroup);
+        if ($format === 'csv') {
+            return $matrixService->exportCsv($user, $laboratoryId, $year, $month, $categoryGroup);
+        }
+
+        return $matrixService->exportExcel($user, $laboratoryId, $year, $month, $categoryGroup);
     }
 
     public function create(Request $request): Response

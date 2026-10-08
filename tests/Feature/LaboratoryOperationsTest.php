@@ -144,12 +144,17 @@ class LaboratoryOperationsTest extends TestCase
             );
 
         // Access matrix export CSV
-        $export = $this->actingAs($this->staff)->get('/material-usages/export-monthly?laboratory_id='.$this->laboratory->id.'&year=2026&month=9&category_group=bahan')
+        $exportCsv = $this->actingAs($this->staff)->get('/material-usages/export-monthly?laboratory_id='.$this->laboratory->id.'&year=2026&month=9&category_group=bahan&format=csv')
             ->assertOk()
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
 
-        $this->assertStringContainsString('STOCK OPNAME BAHAN KIMIA', $export->streamedContent());
-        $this->assertStringContainsString('MEDIA-01', $export->streamedContent());
+        $this->assertStringContainsString('STOCK OPNAME BAHAN KIMIA', $exportCsv->streamedContent());
+        $this->assertStringContainsString('MEDIA-01', $exportCsv->streamedContent());
+
+        // Access matrix export XLSX (default)
+        $this->actingAs($this->staff)->get('/material-usages/export-monthly?laboratory_id='.$this->laboratory->id.'&year=2026&month=9&category_group=bahan')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
         // Access transactions export CSV with date range
         $txExport = $this->actingAs($this->staff)->get('/material-usages/export?date_from=2026-09-01&date_to=2026-09-30&laboratory_id='.$this->laboratory->id)
